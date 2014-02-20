@@ -1,0 +1,12 @@
+.project
+.pydevproject
+.settings/
+*.pyc
+*~
+*.swp
+*.pickle
+extcom/exp/networks/
+extcom/exp/results/
+extcom/exp/graphs/
+extcom/exp/data/
+
