@@ -18,20 +18,19 @@ from __future__ import division
 class _AbstractModularity(object):
     
     def __init__(self):
-        self._mod_val = None
+        self._modval = None
 
     def name(self):
         return self.__class__.__name__
 
-    def get_modval(self):
-        return self._mod_val
+    def value(self):
+        return self._modval
     
     def calculate(self, status):
         """ Calculate the value of modularity.
-        com_labels is the list of indices of community.
         """
-        self._mod_val = self._calculate(status)
-        return self._mod_val
+        self._modval = self._calculate(status)
+        return self._modval
 
     def _calculate(self, status):
         msg = 'modularity class should have _calculate function.'
@@ -113,13 +112,13 @@ class NeubauerModularity(_AbstractModularity):
 
     def __init__(self):
         _AbstractModularity.__init__(self)
-        self._mod_val_from_corres = None
+        self._modval_from_corres = None
 
     def _calculate(self, status):
         partnum = status.basic.get_partnum()
         total_egnum = status.basic.get_edge_num()
 
-        mod_val_from_corres = {}
+        modval_from_corres = {}
         mod = 0
         for corres, egnum_in_corres in status.com.iter_corres_egnum():
             e = egnum_in_corres / total_egnum
@@ -136,9 +135,9 @@ class NeubauerModularity(_AbstractModularity):
             partial_mod = _mod * alpha
 
             mod += partial_mod
-            mod_val_from_corres[corres] = partial_mod
+            modval_from_corres[corres] = partial_mod
             
-        self._mod_val_from_corres = mod_val_from_corres
+        self._modval_from_corres = modval_from_corres
         return mod
 
     def calculate_diff(self, status, moving_diff_info):
@@ -149,7 +148,7 @@ class NeubauerModularity(_AbstractModularity):
 
         # revise modularity
         partnum = status.basic.get_partnum()
-        modval_from_corres = self._mod_val_from_corres
+        modval_from_corres = self._modval_from_corres
         new_modval_from_corres = {}
         all_egnum = status.basic.get_edge_num()
         delta = 0
@@ -189,11 +188,11 @@ class NeubauerModularity(_AbstractModularity):
         return delta, modval_diff_info
         
     def update_modval_with_diff_info(self, modval_diff_info):
-        delta_mod_val = modval_diff_info['delta_mod']
+        delta_modval = modval_diff_info['delta_mod']
         new_modval_from_corres = modval_diff_info['new_modval_from_corres']
 
         # reflect correspondence information
-        modval_from_corres = self._mod_val_from_corres
+        modval_from_corres = self._modval_from_corres
         for corres, modval in new_modval_from_corres.iteritems():
             if modval is None:
                 del modval_from_corres[corres]
@@ -201,7 +200,7 @@ class NeubauerModularity(_AbstractModularity):
                 modval_from_corres[corres] = modval
 
         # reflect modularity value
-        self._mod_val += delta_mod_val
+        self._modval += delta_modval
 
 class ThresholdModularity(_AbstractModularity):
 
@@ -276,7 +275,7 @@ def _test_modularity(status, mod_list, answer_list):
 def _test_delta_calculation(modularity, moved_vrts_info, answer):
     moving_diff = status.com.diff_of_moving_vrts(moved_vrts_info)
     delta, modval_diff = modularity.calculate_diff(status, moving_diff)
-    modval = modularity.get_modval() + delta
+    modval = modularity.value() + delta
     ans = answer
     tn = modval == answer
     print "    mod: %.5f (del: %.5f), ans: %.5f, %s" % (modval, delta, ans, tn)
