@@ -50,10 +50,10 @@ class _BasicInformation(object):
             
         return tuple(between_vrt_eg)
 
-    def get_edge_num(self):
+    def edgenum(self):
         return self._edge_num
 
-    def get_partnum(self):
+    def partnum(self):
         return self._partnum
 
     def get_vertex_num_list(self):
@@ -90,7 +90,7 @@ class _CommunityStatus(object):
 
     def __init__(self, basic_info):
         self._basic_info = basic_info
-        self._partnum = basic_info.get_partnum()
+        self._partnum = basic_info.partnum()
 
         _vrtnum_list = self._basic_info.get_vertex_num_list()
         self._com_labels = [ [None] * _vrtnum 
@@ -499,8 +499,8 @@ class _EdgeStatus(object):
 
     def __init__(self, basic_info):
         self._basic_info = basic_info
-        self._partnum = basic_info.get_partnum()
-        self._egcl_labels = [None] * self._basic_info.get_edge_num()
+        self._partnum = basic_info.partnum()
+        self._egcl_labels = [None] * self._basic_info.edgenum()
 
         self._memberset_from_egcl = None
         self._membernum_from_egcl = None
@@ -527,7 +527,7 @@ class _EdgeStatus(object):
             yield adj_egcl
 
     def assign_unique_egcl_labels(self):
-        egcl_labels = range( self._basic_info.get_edge_num() )
+        egcl_labels = range( self._basic_info.edgenum() )
         self.set_egcl_labels(egcl_labels)
         return self._egcl_labels
 
@@ -602,9 +602,9 @@ class _HierarchicalEdgeStatus(_EdgeStatus):
 
     def __init__(self, basic_info):
         self._basic_info = basic_info
-        self._partnum = basic_info.get_partnum()
+        self._partnum = basic_info.partnum()
 
-        self._egcl_labels = [None] * self._basic_info.get_edge_num()
+        self._egcl_labels = [None] * self._basic_info.edgenum()
 
         self._memberset_from_egcl = None
         self._membernum_from_egcl = None
@@ -787,7 +787,7 @@ class ComEgclSynchronalManeger(object):
 
     def __init__(self, status):
         self._status = status
-        self._partnum = status.basic.get_partnum()
+        self._partnum = status.basic.partnum()
 
     def assign_unique_egcl_labels(self):
         status = self._status

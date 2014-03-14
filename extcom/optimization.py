@@ -39,7 +39,7 @@ class GreedyVertexBottomUp(_AbstractOptimization):
         status.add_com()
         
         # get 'n' of 'n-partite network'
-        partnum = status.basic.get_partnum()
+        partnum = status.basic.partnum()
 
         # initialize
         status.com.assign_unique_com_labels()
@@ -88,7 +88,7 @@ class GreedyVertexBottomUpSpeedy(_AbstractOptimization):
         status.add_com()
         
         # get 'n' of 'n-partite network'
-        partnum = status.basic.get_partnum()
+        partnum = status.basic.partnum()
 
         # initialize
         status.com.assign_unique_com_labels()

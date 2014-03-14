@@ -42,8 +42,8 @@ class _AbstractModularity(object):
 class MurataModularity(_AbstractModularity):
 
     def _calculate(self, status):
-        partnum = status.basic.get_partnum()
-        total_egnum = status.basic.get_edge_num()
+        partnum = status.basic.partnum()
+        total_egnum = status.basic.edgenum()
 
         modval_from_com = [{} for _ in range(partnum)]
         max_e_from_com = [{} for _ in range(partnum)]
@@ -68,45 +68,6 @@ class MurataModularity(_AbstractModularity):
                     modval += partial_mod
         
         return modval / partnum
-    '''
-    def _calculate(self, status):
-        total_eg_num = status.basic.get_edge_num()
-        max_elmn_from_com = ({}, {}, {})
-        modval = 0
-        checked_coms = (set(), set(), set())
-        for corres, eg_num_in_corres in status.com.iter_corres_egnum():
-            e_lmn = eg_num_in_corres / total_eg_num
-            
-            # whether max elmn or not for each community
-            for part, com in enumerate(corres):
-                if com in checked_coms[part]:
-                    continue
-
-                max_elmn = max_elmn_from_com[part].get(com, 0)
-                if e_lmn < max_elmn:
-                    continue
-
-                checked_coms[part].add(com)
-                max_elmn_from_com[part][com] = e_lmn
-
-                corres_set = status.com.corresset_from_com(part, com)
-                coms_in_parts = map(set, zip(*corres_set))
-                for xcom, ycom, zcom in itertools.product(*coms_in_parts):
-                    _corres = (xcom, ycom, zcom)
-                    corres_egnum = status.com.egnum_from_corres(_corres)
-                    egnum_xcom = status.com.egnum_from_com(0, xcom)
-                    egnum_ycom = status.com.egnum_from_com(1, ycom)
-                    egnum_zcom = status.com.egnum_from_com(2, zcom)
-
-                    _elmn = corres_egnum / total_eg_num
-                    _al = egnum_xcom / total_eg_num
-                    _am = egnum_ycom / total_eg_num
-                    _an = egnum_zcom / total_eg_num
-                    part_mod = _elmn - _al * _am * _an
-                    modval += part_mod
-
-        return modval / 3
-    '''
 
 class NeubauerModularity(_AbstractModularity):
 
@@ -115,8 +76,8 @@ class NeubauerModularity(_AbstractModularity):
         self._modval_from_corres = None
 
     def _calculate(self, status):
-        partnum = status.basic.get_partnum()
-        total_egnum = status.basic.get_edge_num()
+        partnum = status.basic.partnum()
+        total_egnum = status.basic.edgenum()
 
         modval_from_corres = {}
         mod = 0
@@ -147,10 +108,10 @@ class NeubauerModularity(_AbstractModularity):
         new_egnum_from_corres = moving_diff_info['new_egnum_from_corres']
 
         # revise modularity
-        partnum = status.basic.get_partnum()
+        partnum = status.basic.partnum()
         modval_from_corres = self._modval_from_corres
         new_modval_from_corres = {}
-        all_egnum = status.basic.get_edge_num()
+        all_egnum = status.basic.edgenum()
         delta = 0
         for corres, egnum in new_egnum_from_corres.iteritems():
             if egnum == 0:
@@ -205,8 +166,8 @@ class NeubauerModularity(_AbstractModularity):
 class ThresholdModularity(_AbstractModularity):
 
     def _calculate(self, status):
-        partnum = status.basic.get_partnum()
-        total_egnum = status.basic.get_edge_num()
+        partnum = status.basic.partnum()
+        total_egnum = status.basic.edgenum()
         mod = 0
         for corres, egnum_in_corres in status.com.iter_corres_egnum():
             e = egnum_in_corres / total_egnum
@@ -237,8 +198,8 @@ class PowerModularity(_AbstractModularity):
         return self.__class__.__name__ + '(%2.3f)' % self.power
 
     def _calculate(self, status):
-        partnum = status.basic.get_partnum()
-        total_egnum = status.basic.get_edge_num()
+        partnum = status.basic.partnum()
+        total_egnum = status.basic.edgenum()
         mod = 0
         for corres, egnum_in_corres in status.com.iter_corres_egnum():
             e = egnum_in_corres / total_egnum
