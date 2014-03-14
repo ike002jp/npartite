@@ -26,7 +26,7 @@ from _status import ComEgclSynchronalManeger
 #--------------------------------------------------
 class _AbstractOptimization(object):
 
-    def get_name(self):
+    def name(self):
         return self.__class__.__name__
 
 class GreedyVertexBottomUp(_AbstractOptimization):
@@ -298,7 +298,7 @@ class FastUnfoldingForEdges(FastUnfoldingForEdgesNaively):
 def _test_optimizing(eglist, opt, mod, answer, in_detail=True):
     import time
 
-    print '  %-50s :' % ( '%s, %s' % (opt.get_name(), mod.get_name()), ), 
+    print '  %-50s :' % ( '%s, %s' % (opt.name(), mod.name()), ), 
     ans_modval = _adjust_value( answer['modval'] )
     ans_labels = answer['labels']
     ans_modvals = _adjust_values( answer['modvals'] )

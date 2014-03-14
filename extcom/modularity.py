@@ -20,7 +20,7 @@ class _AbstractModularity(object):
     def __init__(self):
         self._mod_val = None
 
-    def get_name(self):
+    def name(self):
         return self.__class__.__name__
 
     def get_modval(self):
@@ -234,7 +234,7 @@ class PowerModularity(_AbstractModularity):
         _AbstractModularity.__init__(self)
         self.power = power
 
-    def get_name(self):
+    def name(self):
         return self.__class__.__name__ + '(%2.3f)' % self.power
 
     def _calculate(self, status):
@@ -266,7 +266,7 @@ class PowerModularity(_AbstractModularity):
 #--------------------------------------------------
 def _test_modularity(status, mod_list, answer_list):
     for ind, mod in enumerate(mod_list):
-        modname = mod.get_name()
+        modname = mod.name()
         modval = mod.calculate(status)
         ans = answer_list[ind]
         tn = modval == ans
