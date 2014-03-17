@@ -7,6 +7,8 @@
 #--------------------------------------------------
 from __future__ import division
 
+from itertools import izip
+
 #--------------------------------------------------
 # static variables
 #--------------------------------------------------
@@ -43,23 +45,25 @@ class MurataModularity(_AbstractModularity):
 
     def _calculate(self, status):
         partnum = status.basic.partnum()
+        partlist = status.basic.partlist()
         total_egnum = status.basic.edgenum()
 
-        modval_from_com = [{} for _ in range(partnum)]
-        max_e_from_com = [{} for _ in range(partnum)]
+        modval_from_com = [{} for _ in partlist]
+        max_e_from_com = [{} for _ in partlist]
         modval = 0
         for corres, egnum_in_corres in status.com.iter_corres_egnum():
             e = egnum_in_corres / total_egnum
 
-            a = [None for _ in range(partnum)]
-            for part, com in enumerate(corres):
-                a[part] = status.com.egnum_from_com(part, com) / total_egnum
+            a_multiplied = 1
+            for part, com in izip(partlist, corres):
+                egnum_from_com = status.com.egnum_from_com(part, com)
+                a = egnum_from_com / total_egnum
+                a_multiplied *= a
 
-            a_multiplied = reduce(lambda x, y: x*y, a)
             partial_mod = e  - a_multiplied
             
             # whether max elmn or not for each community
-            for part, com in enumerate(corres):
+            for part, com in izip(partlist, corres):
                 max_e = max_e_from_com[part].get(com, 0)
                 if e > max_e:
                     max_e_from_com[part][com] = e
@@ -77,22 +81,23 @@ class NeubauerModularity(_AbstractModularity):
 
     def _calculate(self, status):
         partnum = status.basic.partnum()
+        partlist = status.basic.partlist()
         total_egnum = status.basic.edgenum()
 
         modval_from_corres = {}
         mod = 0
         for corres, egnum_in_corres in status.com.iter_corres_egnum():
             e = egnum_in_corres / total_egnum
+            a_multiplied = 1
+            a_inv_sum = 0
+            for part, com in izip(partlist, corres):
+                egnum_from_com = status.com.egnum_from_com(part, com)
+                a = egnum_from_com / total_egnum
+                a_multiplied *= a
+                a_inv_sum += 1 / a
 
-            a = [None for _ in range(partnum)]
-            a_inv = [None for _ in range(partnum)]
-            for part, com in enumerate(corres):
-                a[part] = status.com.egnum_from_com(part, com) / total_egnum
-                a_inv[part] = 1 / a[part]
-
-            a_multiplied = reduce(lambda x, y: x*y, a)
-            alpha = e * sum(a_inv) * (1 / partnum)
-            _mod = e  - a_multiplied
+            _mod = e - a_multiplied
+            alpha = e * a_inv_sum * (1 / partnum)
             partial_mod = _mod * alpha
 
             mod += partial_mod
@@ -167,20 +172,22 @@ class ThresholdModularity(_AbstractModularity):
 
     def _calculate(self, status):
         partnum = status.basic.partnum()
+        partlist = status.basic.partlist()
         total_egnum = status.basic.edgenum()
+
         mod = 0
         for corres, egnum_in_corres in status.com.iter_corres_egnum():
             e = egnum_in_corres / total_egnum
+            a_multiplied = 1
+            a_inv_sum = 0
+            for part, com in izip(partlist, corres):
+                egnum_from_com = status.com.egnum_from_com(part, com)
+                a = egnum_from_com / total_egnum
+                a_multiplied *= a
+                a_inv_sum += 1 / a
 
-            a = [None for _ in range(partnum)]
-            a_inv = [None for _ in range(partnum)]
-            for part, com in enumerate(corres):
-                a[part] = status.com.egnum_from_com(part, com) / total_egnum
-                a_inv[part] = 1 / a[part]
-
-            a_multiplied = reduce(lambda x, y: x*y, a)
-            alpha = e * sum(a_inv) * (1 / partnum)
             _mod = e  - a_multiplied
+            alpha = e * a_inv_sum * (1 / partnum)
             partial_mod = _mod * alpha
 
             if _mod > 0:
@@ -199,20 +206,22 @@ class PowerModularity(_AbstractModularity):
 
     def _calculate(self, status):
         partnum = status.basic.partnum()
+        partlist = status.basic.partlist()
         total_egnum = status.basic.edgenum()
+
         mod = 0
         for corres, egnum_in_corres in status.com.iter_corres_egnum():
             e = egnum_in_corres / total_egnum
+            a_multiplied = 1
+            a_inv_sum = 0
+            for part, com in izip(partlist, corres):
+                egnum_from_com = status.com.egnum_from_com(part, com)
+                a = egnum_from_com / total_egnum
+                a_multiplied *= a
+                a_inv_sum += 1 / a
 
-            a = [None for _ in range(partnum)]
-            a_inv = [None for _ in range(partnum)]
-            for part, com in enumerate(corres):
-                a[part] = status.com.egnum_from_com(part, com) / total_egnum
-                a_inv[part] = 1 / a[part]
-
-            a_multiplied = reduce(lambda x, y: x*y, a)
-            alpha = e * sum(a_inv) * (1 / partnum)
             _mod = e  - a_multiplied
+            alpha = e * a_inv_sum * (1 / partnum)
             partial_mod = _mod * alpha
 
             if _mod > 0:

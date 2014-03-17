@@ -34,6 +34,7 @@ class _BasicInformation(object):
         self._total_vertex_num = sum(self._vertex_num_list)
         self._edge_num = len(edges)
         self._partnum = len(edges[0])
+        self._partlist = range(self._partnum)
         self._adj_egset_from_vrt = \
             self._make_adjacency_between_vertex_and_edge(edges)
 
@@ -55,6 +56,9 @@ class _BasicInformation(object):
 
     def partnum(self):
         return self._partnum
+
+    def partlist(self):
+        return self._partlist
 
     def get_vertex_num_list(self):
         return self._vertex_num_list
