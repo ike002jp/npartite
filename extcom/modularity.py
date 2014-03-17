@@ -46,18 +46,18 @@ class MurataModularity(_AbstractModularity):
     def _calculate(self, status):
         partnum = status.basic.partnum()
         partlist = status.basic.partlist()
-        total_egnum = status.basic.edgenum()
+        all_egnum = status.basic.edgenum()
 
         modval_from_com = [{} for _ in partlist]
         max_e_from_com = [{} for _ in partlist]
         modval = 0
         for corres, egnum_in_corres in status.com.iter_corres_egnum():
-            e = egnum_in_corres / total_egnum
+            e = egnum_in_corres / all_egnum
 
             a_multiplied = 1
             for part, com in izip(partlist, corres):
                 egnum_from_com = status.com.egnum_from_com(part, com)
-                a = egnum_from_com / total_egnum
+                a = egnum_from_com / all_egnum
                 a_multiplied *= a
 
             partial_mod = e  - a_multiplied
@@ -82,17 +82,17 @@ class NeubauerModularity(_AbstractModularity):
     def _calculate(self, status):
         partnum = status.basic.partnum()
         partlist = status.basic.partlist()
-        total_egnum = status.basic.edgenum()
+        all_egnum = status.basic.edgenum()
 
         modval_from_corres = {}
         mod = 0
         for corres, egnum_in_corres in status.com.iter_corres_egnum():
-            e = egnum_in_corres / total_egnum
+            e = egnum_in_corres / all_egnum
             a_multiplied = 1
             a_inv_sum = 0
             for part, com in izip(partlist, corres):
                 egnum_from_com = status.com.egnum_from_com(part, com)
-                a = egnum_from_com / total_egnum
+                a = egnum_from_com / all_egnum
                 a_multiplied *= a
                 a_inv_sum += 1 / a
 
@@ -107,16 +107,17 @@ class NeubauerModularity(_AbstractModularity):
         return mod
 
     def calculate_diff(self, status, moving_diff_info):
-        #new_egset_from_com = moving_diff_info['new_egset_from_com']
         new_egnum_from_com = moving_diff_info['new_egnum_from_com']
-        #new_egset_from_corres = moving_diff_info['new_egset_from_corres']
         new_egnum_from_corres = moving_diff_info['new_egnum_from_corres']
 
-        # revise modularity
-        partnum = status.basic.partnum()
         modval_from_corres = self._modval_from_corres
         new_modval_from_corres = {}
+
+        partnum = status.basic.partnum()
+        partlist = status.basic.partlist()
         all_egnum = status.basic.edgenum()
+
+        # revise modularity
         delta = 0
         for corres, egnum in new_egnum_from_corres.iteritems():
             if egnum == 0:
@@ -125,18 +126,18 @@ class NeubauerModularity(_AbstractModularity):
                 continue
 
             e = egnum / all_egnum
-            a = [None for _ in range(partnum)]
-            a_inv = [None for _ in range(partnum)]
-            for part, com in enumerate(corres):
-                egnum_of_com = new_egnum_from_com[part].get(
-                                com, status.com.egnum_from_com(part, com) )
+            a_multiplied = 1
+            a_inv_sum = 0
+            for part, com in izip(partlist, corres):
+                egnum_from_com = new_egnum_from_com[part].get(
+                                    com, 
+                                    status.com.egnum_from_com(part, com) )
+                a = egnum_from_com / all_egnum
+                a_multiplied *= a
+                a_inv_sum += 1 / a
 
-                a[part] = egnum_of_com / all_egnum
-                a_inv[part] = 1 / a[part]
-
-            a_multiplied = reduce(lambda x, y: x*y, a)
-            alpha = e * sum(a_inv) * (1 / partnum)
-            _mod = e  - a_multiplied
+            _mod = e - a_multiplied
+            alpha = e * a_inv_sum * (1 / partnum)
             partial_mod = _mod * alpha
 
             delta += partial_mod
@@ -157,7 +158,7 @@ class NeubauerModularity(_AbstractModularity):
         delta_modval = modval_diff_info['delta_mod']
         new_modval_from_corres = modval_diff_info['new_modval_from_corres']
 
-        # reflect correspondence information
+        # update modval for each correspondence
         modval_from_corres = self._modval_from_corres
         for corres, modval in new_modval_from_corres.iteritems():
             if modval is None:
@@ -173,16 +174,16 @@ class ThresholdModularity(_AbstractModularity):
     def _calculate(self, status):
         partnum = status.basic.partnum()
         partlist = status.basic.partlist()
-        total_egnum = status.basic.edgenum()
+        all_egnum = status.basic.edgenum()
 
         mod = 0
         for corres, egnum_in_corres in status.com.iter_corres_egnum():
-            e = egnum_in_corres / total_egnum
+            e = egnum_in_corres / all_egnum
             a_multiplied = 1
             a_inv_sum = 0
             for part, com in izip(partlist, corres):
                 egnum_from_com = status.com.egnum_from_com(part, com)
-                a = egnum_from_com / total_egnum
+                a = egnum_from_com / all_egnum
                 a_multiplied *= a
                 a_inv_sum += 1 / a
 
@@ -207,16 +208,16 @@ class PowerModularity(_AbstractModularity):
     def _calculate(self, status):
         partnum = status.basic.partnum()
         partlist = status.basic.partlist()
-        total_egnum = status.basic.edgenum()
+        all_egnum = status.basic.edgenum()
 
         mod = 0
         for corres, egnum_in_corres in status.com.iter_corres_egnum():
-            e = egnum_in_corres / total_egnum
+            e = egnum_in_corres / all_egnum
             a_multiplied = 1
             a_inv_sum = 0
             for part, com in izip(partlist, corres):
                 egnum_from_com = status.com.egnum_from_com(part, com)
-                a = egnum_from_com / total_egnum
+                a = egnum_from_com / all_egnum
                 a_multiplied *= a
                 a_inv_sum += 1 / a
 
@@ -271,8 +272,8 @@ if __name__ == "__main__":
     # modularity calculation, test 1
     print '  All vertices are same community'
     com_labels = [[0, 0, 0, 0],
-                       [0, 0, 0, 0],
-                       [0, 0, 0, 0]]
+                  [0, 0, 0, 0],
+                  [0, 0, 0, 0]]
     answer_list = [0.0, 0.0, 0.0, 0.0]
     status.com.set_com_labels(com_labels)
     _test_modularity(status, mod_list, answer_list)
@@ -280,8 +281,8 @@ if __name__ == "__main__":
     # modularity calculation, test 2
     print '  Idealistic community structure for this network (probably)'
     com_labels = [[0, 0, 1, 1],
-                       [0, 0, 1, 1],
-                       [0, 0, 1, 1]]
+                  [0, 0, 1, 1],
+                  [0, 0, 1, 1]]
     answer_list = [0.75, 0.75, 0.75, 0.28125]
     status.com.set_com_labels(com_labels)
     _test_modularity(status, mod_list, answer_list)
@@ -289,8 +290,8 @@ if __name__ == "__main__":
     # modularity calculation, test 3
     print '  Asymetric community structure'
     com_labels = [[0, 1, 1, 1],
-                       [0, 1, 1, 1],
-                       [0, 0, 0, 0]]
+                  [0, 1, 1, 1],
+                  [0, 0, 0, 0]]
     answer_list = [0.3125, 0.3125, 0.3125, 0.04931640625]
     status.com.set_com_labels(com_labels)
     _test_modularity(status, mod_list, answer_list)
@@ -302,8 +303,8 @@ if __name__ == "__main__":
     ##############################################
     print 'Delta calcuation test'
     com_labels = [[0, 0, 0, 0],
-                       [0, 0, 0, 0],
-                       [0, 0, 0, 0]]
+                  [0, 0, 0, 0],
+                  [0, 0, 0, 0]]
     modularity = NeubauerModularity()
     status.com.set_com_labels(com_labels)
     modval = modularity.calculate(status)

@@ -46,7 +46,7 @@ class GreedyVertexBottomUp(_AbstractOptimization):
         modval = modularity.calculate(status)
         modvals = [modval]
         ans_modval = modval
-        ans_labels = copy.deepcopy( status.com.get_com_labels() )
+        ans_labels = copy.deepcopy( status.com.com_labels() )
 
         # repeat merging processes
         while( status.com.count_all_comnums() > partnum ):
@@ -74,7 +74,7 @@ class GreedyVertexBottomUp(_AbstractOptimization):
             # maximum modularity during the algorithm
             if modval > ans_modval:
                 ans_modval = modval
-                ans_labels = copy.deepcopy( status.com.get_com_labels() )
+                ans_labels = copy.deepcopy( status.com.com_labels() )
 
         return ans_modval, ans_labels, modvals
 
@@ -95,7 +95,7 @@ class GreedyVertexBottomUpSpeedy(_AbstractOptimization):
         modval = modularity.calculate(status)
         modvals = [modval]
         ans_modval = modval
-        ans_labels = copy.deepcopy( status.com.get_com_labels() )
+        ans_labels = copy.deepcopy( status.com.com_labels() )
 
         # repeat merging processes
         while( status.com.count_all_comnums() > partnum ):
@@ -127,7 +127,7 @@ class GreedyVertexBottomUpSpeedy(_AbstractOptimization):
             # maximum modularity during the algorithm
             if modval > ans_modval:
                 ans_modval = modval
-                ans_labels = copy.deepcopy( status.com.get_com_labels() )
+                ans_labels = copy.deepcopy( status.com.com_labels() )
 
         return ans_modval, ans_labels, modvals
 
@@ -150,7 +150,7 @@ class GreedyEdgeBottomUp(_AbstractOptimization):
         modval = modularity.calculate(status)
         modvals = [modval]
         ans_modval = modval
-        ans_labels = copy.deepcopy( status.com.get_com_labels() )
+        ans_labels = copy.deepcopy( status.com.com_labels() )
 
         # repeat merging processes
         while( status.egcl.calculate_egclnum() > 1 ):
@@ -178,7 +178,7 @@ class GreedyEdgeBottomUp(_AbstractOptimization):
             # maximum modularity during the algorithm
             if modval > ans_modval:
                 ans_modval = modval
-                ans_labels = copy.deepcopy( status.com.get_com_labels() )
+                ans_labels = copy.deepcopy( status.com.com_labels() )
         return ans_modval, ans_labels, modvals
 
 class FastUnfoldingForEdgesNaively(_AbstractOptimization):
@@ -212,7 +212,7 @@ class FastUnfoldingForEdgesNaively(_AbstractOptimization):
             ans_modval = _modval
             modvals.extend(_modvals)
 
-        return ans_modval, status.com.get_com_labels(), modvals
+        return ans_modval, status.com.com_labels(), modvals
         
 
     def _optimize_modularity(self, modularity, status, updater):
@@ -390,16 +390,16 @@ if __name__ == '__main__':
               'labels' : [[3, 3, 7, 7], [3, 3, 7, 7], [3, 3, 7, 7]],
               'modvals': [0.4375, 0.59375, 0.75, 0.75, 0.75, 0.75, 0.75, 0.0],
               }
-    #_test_optimizing(eglist, optimization, modularity, answer, in_detail)
-    _test_optimizing(eglist, fue_naively, neubauer, answer, True)
+    _test_optimizing(eglist, fue_naively, neubauer, answer, in_detail)
+    #_test_optimizing(eglist, fue_naively, neubauer, answer, True)
 
     # FUE, Neubauer
     answer = {'modval' : 0.75,
               'labels' : [[3, 3, 7, 7], [3, 3, 7, 7], [3, 3, 7, 7]],
               'modvals': [0.4375, 0.59375, 0.75, 0.75, 0.75, 0.75, 0.75, 0.0],
               }
-    #_test_optimizing(eglist, optimization, modularity, answer, in_detail)
-    _test_optimizing(eglist, fue, neubauer, answer, True)
+    _test_optimizing(eglist, fue, neubauer, answer, in_detail)
+    #_test_optimizing(eglist, fue, neubauer, answer, True)
 
     print ''
 
@@ -439,16 +439,16 @@ if __name__ == '__main__':
               'labels' : [[3, 3, 7, 7], [3, 3, 7, 7], [3, 3, 7, 7]],
               'modvals': [0.4375, 0.59375, 0.75, 0.75, 0.75, 0.75, 0.75, 0.0],
               }
-    #_test_optimizing(eglist, optimization, modularity, answer, in_detail)
-    _test_optimizing(eglist, fue_naively, neubauer, answer, True)
+    _test_optimizing(eglist, fue_naively, neubauer, answer, in_detail)
+    #_test_optimizing(eglist, fue_naively, neubauer, answer, True)
 
     # FUE, Neubauer
     answer = {'modval' : 0.75,
               'labels' : [[3, 3, 7, 7], [3, 3, 7, 7], [3, 3, 7, 7]],
               'modvals': [0.4375, 0.59375, 0.75, 0.75, 0.75, 0.75, 0.75, 0.0],
               }
-    #_test_optimizing(eglist, fue, modularity, answer, in_detail)
-    _test_optimizing(eglist, fue, neubauer, answer, True)
+    _test_optimizing(eglist, fue, neubauer, answer, in_detail)
+    #_test_optimizing(eglist, fue, neubauer, answer, True)
 
     # greedy edge, Murata
     modularity = MurataModularity()

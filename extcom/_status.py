@@ -9,6 +9,7 @@ from __future__ import division
 import itertools
 import copy
 import random
+from itertools import izip
 
 #--------------------------------------------------
 # static variables
@@ -28,25 +29,27 @@ class _BasicInformation(object):
         self._edges = edges
 
         # parameters
-        _n_part_vertex_list = zip(*edges)
         self._vertex_num_list = [len( set(vertex_list) ) 
-                                    for vertex_list in _n_part_vertex_list]
+                                 for vertex_list in zip(*edges)]
         self._total_vertex_num = sum(self._vertex_num_list)
+
         self._edge_num = len(edges)
+
         self._partnum = len(edges[0])
         self._partlist = range(self._partnum)
+
         self._adj_egset_from_vrt = \
             self._make_adjacency_between_vertex_and_edge(edges)
 
-        self._degrees = [{} for _ in range(self._partnum)]
+        self._degrees = [{} for _ in self._partlist]
         for part, adj_egset_from_vrt in enumerate(self._adj_egset_from_vrt):
             for vrt, adj_egset in adj_egset_from_vrt.iteritems():
                 self._degrees[part][vrt] = len(adj_egset)
 
     def _make_adjacency_between_vertex_and_edge(self, edges):
-        between_vrt_eg = [{} for _ in range(self._partnum)]
+        between_vrt_eg = [{} for _ in self._partlist]
         for eg_ind, eg in enumerate(edges):
-            for part, vertex in enumerate(eg):
+            for part, vertex in izip(self._partlist, eg):
                 between_vrt_eg[part].setdefault(vertex, set()).add(eg_ind)
             
         return tuple(between_vrt_eg)
@@ -93,10 +96,11 @@ class _BasicInformation(object):
 class _CommunityStatus(object):
 
     def __init__(self, basic_info):
-        self._basic_info = basic_info
+        self._basic = basic_info
         self._partnum = basic_info.partnum()
+        self._partlist = basic_info.partlist()
 
-        _vrtnum_list = self._basic_info.get_vertex_num_list()
+        _vrtnum_list = self._basic.get_vertex_num_list()
         self._com_labels = [ [None] * _vrtnum 
                                   for _vrtnum in _vrtnum_list ]
  
@@ -105,46 +109,47 @@ class _CommunityStatus(object):
         self._egset_from_com = None
         self._egnum_from_com = None
         self._corresset_from_com =None
+
         self._egset_from_corres = None
         self._egnum_from_corres = None
 
-    # accessor : whole community structures
+    # whole community structures
     def count_all_comnums(self):
-        return sum([len(__memberset_in_com) 
-                    for __memberset_in_com in self._memberset_in_com])
+        return sum([len(_memberset_in_com) 
+                    for _memberset_in_com in self._memberset_in_com])
 
-    def get_com_labels(self):
+    def com_labels(self):
         return self._com_labels
 
-    # accessor : each community
-    def com_of_vrt(self, part=None, vrt=None):
+    # each community
+    def com_of_vrt(self, part, vrt):
         return self._com_labels[part][vrt]
 
     def memberset_in_com(self, part, com):
-        #return self._memberset_in_com[part].get(com, set())
-        return self._memberset_in_com[part].setdefault(com, set())
+        return self._memberset_in_com[part].get(com, set())
+        #return self._memberset_in_com[part].setdefault(com, set())
 
     def membernum_in_com(self, part, com):
-        #return self._membernum_in_com[part].get(com, 0)
-        return self._membernum_in_com[part].setdefault(com, 0)
+        return self._membernum_in_com[part].get(com, 0)
+        #return self._membernum_in_com[part].setdefault(com, 0)
 
     def egset_from_com(self, part, com):
-        #return self._egset_from_com[part].get(com, set())
-        return self._egset_from_com[part].setdefault(com, set())
+        return self._egset_from_com[part].get(com, set())
+        #return self._egset_from_com[part].setdefault(com, set())
 
     def egnum_from_com(self, part, com):
-        #return self._egnum_from_com[part].get(com, 0)
-        return self._egnum_from_com[part].setdefault(com, 0)
+        return self._egnum_from_com[part].get(com, 0)
+        #return self._egnum_from_com[part].setdefault(com, 0)
 
     def corresset_from_com(self, part, com):
-        #return self._corresset_from_com[part].get(com, set())
-        return self._corresset_from_com[part].setdefault(com, set())
+        return self._corresset_from_com[part].get(com, set())
+        #return self._corresset_from_com[part].setdefault(com, set())
 
     def iter_com_combinations(self, part, combi_num=2):
         coms = self._memberset_in_com[part].keys()
         return itertools.combinations(coms, combi_num)
 
-    # accessor : correspondency
+    # correspondency
     def iter_corres_egnum(self):
         return self._egnum_from_corres.iteritems()
 
@@ -156,9 +161,9 @@ class _CommunityStatus(object):
         return self._egnum_from_corres.get(corres, 0)
         #return self._egnum_from_corres.setdefault(corres, 0)
 
-    # manipulator : community index
+    # community index
     def assign_unique_com_labels(self):
-        vertex_num_list = self._basic_info.get_vertex_num_list()
+        vertex_num_list = self._basic.get_vertex_num_list()
         com_labels = [range(num) for num in vertex_num_list]
         self.set_com_labels(com_labels)
 
@@ -166,7 +171,7 @@ class _CommunityStatus(object):
         self._com_labels = com_labels
         self._update_community_structure()
 
-    # inner manipulator : used in this class
+    # used in this class
     def _del_com(self, part, com):
         del self._memberset_in_com[part][com]
         del self._membernum_in_com[part][com]
@@ -177,18 +182,17 @@ class _CommunityStatus(object):
     def _del_corres(self, corres):
         del self._egset_from_corres[corres]
         del self._egnum_from_corres[corres]
-        for part, com in enumerate(corres):
+        for part, com in izip(self._partlist, corres):
             if com in self._corresset_from_com[part]:
-                self._corresset_from_com[part][com].discard(corres)
+                self._corresset_from_com[part][com].remove(corres)
 
-    def _assign_com(self, part, vrt, com):
-        self._com_labels[part][vrt] = com
-
-    # maniurator : merge, move
+    # merge, move
     def merge_coms(self, part, com1, com2):
-        moved_vrtset = self._memberset_in_com[part][com1]
         partnum = self._partnum
-        moved_vrts_info = [{} for _ in range(partnum)]
+        partlist = self._partlist
+        
+        moved_vrtset = self._memberset_in_com[part][com1]
+        moved_vrts_info = [{} for _ in partlist]
         for vrt in moved_vrtset:
             moved_vrts_info[part][vrt] = [com1, com2]
 
@@ -196,10 +200,13 @@ class _CommunityStatus(object):
         self.update_com_with_diff_info(moving_diff_info)
         
     def merge_coms_tentatively(self, part, com1, com2):
-        moved_vrtset = self._memberset_in_com[part][com1]
         partnum = self._partnum
-        moved_vrts_info = [{} for _ in range(partnum)]
-        self._rollback_moved_vrts_info = [{} for _ in range(partnum)]
+        partlist = self._partlist
+        
+        moved_vrtset = self._memberset_in_com[part][com1]
+        moved_vrts_info = [{} for _ in partlist]
+        self._rollback_moved_vrts_info = [{} for _ in partlist]
+
         for vrt in moved_vrtset:
             moved_vrts_info[part][vrt] = [com1, com2]
             self._rollback_moved_vrts_info[part][vrt] = [com2, com1]
@@ -208,21 +215,18 @@ class _CommunityStatus(object):
         self.update_com_with_diff_info(moving_diff_info)
         
     def move_vrts_tentatively(self, moved_vrts_info):
-        partnum = self._partnum
-        self._rollback_moved_vrts_info = [{} for _ in range(partnum)]
-        for part, _moved_vrts_info in enumerate(moved_vrts_info):
-            for vrt, (prev_com, next_com) in _moved_vrts_info.iteritems():
-                self._rollback_moved_vrts_info[part][vrt] = [next_com, prev_com]
+
+        self._rollback_moved_vrts_info = [
+            { vrt : [next_com, prev_com] for 
+                vrt, (prev_com, next_com) in _moved_vrts_info.iteritems() } 
+            for _moved_vrts_info in moved_vrts_info ]
 
         moving_diff_info = self.diff_of_moving_vrts(moved_vrts_info)
         self.update_com_with_diff_info(moving_diff_info)
 
     def rollback_merging_coms(self):
-        moving_diff_info = self.diff_of_moving_vrts(
-                                            self._rollback_moved_vrts_info)
-        self.update_com_with_diff_info(moving_diff_info)
-        self._rollback_moved_vrts_info = None
-    
+        self.rollback_moving_vrts()
+
     def rollback_moving_vrts(self):
         moving_diff_info = self.diff_of_moving_vrts(
                                             self._rollback_moved_vrts_info)
@@ -230,9 +234,9 @@ class _CommunityStatus(object):
         self._rollback_moved_vrts_info = None
 
 
-    # status updater : whole community structure
+    # whole community structure
     def _update_community_structure(self):
-        edge_list = self._basic_info.get_edges_as_tuple()
+        edge_list = self._basic.get_edges_as_tuple()
         partnum = self._partnum
 
         egset_from_corres = {}
@@ -344,7 +348,7 @@ class _CommunityStatus(object):
                 if next_com not in new_egset_from_com[part]:
                     affected_corresset |= self.corresset_from_com(part, next_com)
 
-                _moved_egset = self._basic_info.adj_row_egset_to_vrt(part, vrt)
+                _moved_egset = self._basic.adj_row_egset_to_vrt(part, vrt)
                 moved_egset |= _moved_egset
 
                 new_egset_from_com[part].setdefault(
@@ -442,11 +446,11 @@ class _CommunityStatus(object):
                 if next_com not in checked_com[part]:
                     affected_corresset |= self.corresset_from_com(part, next_com)
 
-                _moved_egset = self._basic_info.adj_row_egset_to_vrt(part, vrt)
+                _moved_egset = self._basic.adj_row_egset_to_vrt(part, vrt)
                 moved_egset |= _moved_egset
 
                 #egnum = len(_moved_egset)
-                egnum = self._basic_info.degree(part, vrt)
+                egnum = self._basic.degree(part, vrt)
                 egnum_from_com = new_egnum_from_com[part].setdefault(
                                     prev_com,
                                     self.egnum_from_com(part, prev_com)
@@ -838,7 +842,7 @@ class ComEgclSynchronalManeger(object):
 
     def _assign_coms_based_on_all_egcls(self):
         status = self._status
-        com_labels = status.com.get_com_labels()
+        com_labels = status.com.com_labels()
         partnum = self._partnum
 
         checked_vrtset = [set() for _ in xrange(partnum)]
@@ -879,7 +883,7 @@ class ComEgclSynchronalManeger(object):
 
     def _moved_vrts_info_by_assignment(self, target_egset):
         status = self._status
-        com_labels = status.com.get_com_labels()
+        com_labels = status.com.com_labels()
         partnum = self._partnum
 
         # information of the moves of the vertices
@@ -940,7 +944,7 @@ class ComEgclSynchronalManeger(object):
     def diff_of_moving_egcl_opt(self, egcl, prev_egcl_label, next_egcl_label):
         status = self._status
         partnum = self._partnum
-        com_labels = status.com.get_com_labels()
+        com_labels = status.com.com_labels()
 
         # update egcl size
         status.egcl._egcl_label_from_egcl[egcl] = next_egcl_label
@@ -995,3 +999,4 @@ class ComEgclSynchronalManeger(object):
 
 if __name__ == 'main':
     pass
+
