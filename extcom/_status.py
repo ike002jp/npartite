@@ -161,6 +161,11 @@ class _CommunityStatus(object):
         return self._egnum_from_corres.get(corres, 0)
         #return self._egnum_from_corres.setdefault(corres, 0)
 
+    def _corres_from_eg(self, eg):
+        corres = [self.com_of_vrt(part, vrt)
+                  for part, vrt in izip(self._partlist, eg)]
+        return tuple(corres)
+
     # community index
     def assign_unique_com_labels(self):
         vertex_num_list = self._basic.get_vertex_num_list()
@@ -237,43 +242,51 @@ class _CommunityStatus(object):
     # whole community structure
     def _update_community_structure(self):
         edge_list = self._basic.get_edges_as_tuple()
-        partnum = self._partnum
+        partlist = self._partlist
+
+        memberset_in_com = [{} for _ in partlist]
+        membernum_in_com = [{} for _ in partlist]
+        egset_from_com = [{} for _ in partlist]
+        egnum_from_com = [{} for _ in partlist]
+        corresset_from_com = [{} for _ in partlist]
 
         egset_from_corres = {}
         egnum_from_corres = {}
-        egset_from_com = [{} for _ in range(partnum)]
-        egnum_from_com = [{} for _ in range(partnum)]
-        memberset_in_com = [{} for _ in range(partnum)]
-        membernum_in_com = [{} for _ in range(partnum)]
-        corresset_from_com = [{} for _ in range(partnum)]
 
         for eg in edge_list:
             # correspondency
-            corres = tuple( [self.com_of_vrt(part, vertex_index)
-                             for part, vertex_index 
-                             in enumerate(eg)] )
-            egset_from_corres.setdefault(corres, set()).add(eg)
-            egnum_from_corres[corres] = egnum_from_corres.get(corres, 0) + 1
+            corres = self._corres_from_eg(eg)
+            if corres not in egset_from_corres:
+                egset_from_corres[corres] = set()
+                egnum_from_corres[corres] = 0
+            egset_from_corres[corres].add(eg)
+            egnum_from_corres[corres] += 1
             
             # community in each part
-            for part, com in enumerate(corres):
-                egset_from_com[part].setdefault(com, set()).add(eg)
-                egnum_from_com[part][com] = egnum_from_com[part].get(com, 0) + 1
-                memberset_in_com[part].setdefault(com, set())
-                if eg[part] not in memberset_in_com[part][com]:
-                    memberset_in_com[part][com].add(eg[part])
-                    membernum_in_com[part][com] = \
-                        membernum_in_com[part].get(com, 0) + 1
-                corresset_from_com[part].setdefault(com, set()).add(corres)
+            for part, vrt, com in izip(partlist, eg, corres):
+                if com not in memberset_in_com[part]:
+                    memberset_in_com[part][com] = set()
+                    membernum_in_com[part][com] = 0
+                    egset_from_com[part][com] = set()
+                    egnum_from_com[part][com] = 0
+                    corresset_from_com[part][com] = set()
+
+                if vrt not in memberset_in_com[part][com]:
+                    memberset_in_com[part][com].add(vrt)
+                    membernum_in_com[part][com] += 1
+                egset_from_com[part][com].add(eg)
+                egnum_from_com[part][com] += 1
+                corresset_from_com[part][com].add(corres)
                 
         self._memberset_in_com = tuple(memberset_in_com)
         self._membernum_in_com = tuple(membernum_in_com)
         self._egset_from_com = tuple(egset_from_com)
         self._egnum_from_com = tuple(egnum_from_com)
         self._corresset_from_com = tuple(corresset_from_com)
+
         self._egset_from_corres = egset_from_corres
         self._egnum_from_corres = egnum_from_corres
-        
+
     def update_com_with_diff_info(self, moving_diff_info):
         moved_vrts_info = moving_diff_info['moved_vrts_info']
         new_egset_from_com = moving_diff_info['new_egset_from_com']
