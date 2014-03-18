@@ -153,7 +153,7 @@ class GreedyEdgeBottomUp(_AbstractOptimization):
         ans_labels = copy.deepcopy( status.com.com_labels() )
 
         # repeat merging processes
-        while( status.egcl.calculate_egclnum() > 1 ):
+        while( status.egcl.count_egclnum() > 1 ):
 
             # all combinations of community 
             max_merged_modval = -1

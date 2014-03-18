@@ -426,13 +426,15 @@ class _CommunityStatus(object):
 class _EdgeStatus(object):
 
     def __init__(self, basic_info):
-        self._basic_info = basic_info
+        self._basic = basic_info
         self._partnum = basic_info.partnum()
+        self._edgenum = basic_info.edgenum()
+
         self._memberset_from_egcl = None
         self._membernum_from_egcl = None
 
-    def get_egcl_labels(self):
-        return self._egcl_labels
+    #def get_egcl_labels(self):
+    #    return self._egcl_labels
 
     def egcl_label(self, eg_ind):
         return self._egcl_labels[eg_ind]
@@ -444,16 +446,15 @@ class _EdgeStatus(object):
         return self._memberset_from_egcl[egcl_label]
 
     def iter_adj_egcl_to_vrt(self, part, vrt):
-        adj_egclset = set()
         adj_egcls = [self.egcl_label(eg_ind)
                      for eg_ind 
-                     in self._basic_info.adj_egset_to_vrt(part, vrt)]
+                     in self._basic.adj_egset_to_vrt(part, vrt)]
 
         for adj_egcl in set(adj_egcls):
             yield adj_egcl
 
     def assign_unique_egcl_labels(self):
-        egcl_labels = range( self._basic_info.edgenum() )
+        egcl_labels = range(self._edgenum)
         self.set_egcl_labels(egcl_labels)
         return self._egcl_labels
 
@@ -461,7 +462,7 @@ class _EdgeStatus(object):
         self._egcl_labels = egcl_labels
         self._update_egcl_structure()
 
-    def calculate_egclnum(self):
+    def count_egclnum(self):
         return len(self._memberset_from_egcl)
 
     def iter_egcl_combination(self, combi_num=2):
@@ -473,32 +474,26 @@ class _EdgeStatus(object):
     def _update_egcl_structure(self):
         memberset_from_egcl = {}
         membernum_from_egcl = {}
-        for eg_ind, egcl in enumerate(self._egcl_labels):
+        for eg_ind, egcl in izip(xrange(self._edgenum), self._egcl_labels):
             memberset_from_egcl.setdefault(egcl, set()).add(eg_ind)
             membernum_from_egcl.setdefault(egcl, 0)
             membernum_from_egcl[egcl] += 1
 
         self._memberset_from_egcl = memberset_from_egcl
         self._membernum_from_egcl = membernum_from_egcl
-        #print self._egcl_labels
-        #print self._memberset_from_egcl
-        #print self._membernum_from_egcl
-        #print ''
 
     def merge_egcls(self, egcl1, egcl2):
         self.merge_egcls_tentatively(egcl1, egcl2)
 
     def merge_egcls_tentatively(self, egcl1, egcl2):
-        assign_info = {}
-        self._rollback_merge_info = None
-        
+
         # delete egcl1
         egcl1_members = self._memberset_from_egcl[egcl1]
         egcl1_num = self._membernum_from_egcl[egcl1]
         del self._memberset_from_egcl[egcl1]
         del self._membernum_from_egcl[egcl1]
 
-        # merge egcl1 to egcls
+        # merge egcl1 to egcl2
         self._memberset_from_egcl[egcl2].update(egcl1_members)
         self._membernum_from_egcl[egcl2] += egcl1_num
 
@@ -511,7 +506,8 @@ class _EdgeStatus(object):
             (egcl1, egcl1_members, egcl1_num, egcl2)
 
     def rollback_merging_egcls(self):
-        egcl1, egcl1_members, egcl1_num, egcl2 = self._rollback_info_of_merging_egcls
+        egcl1, egcl1_members, egcl1_num, egcl2 = \
+            self._rollback_info_of_merging_egcls
 
         # split the merged egdge cluster
         self._memberset_from_egcl[egcl2].difference_update(egcl1_members)
@@ -527,10 +523,11 @@ class _EdgeStatus(object):
 class _HierarchicalEdgeStatus(_EdgeStatus):
 
     def __init__(self, basic_info):
-        self._basic_info = basic_info
+        self._basic = basic_info
         self._partnum = basic_info.partnum()
+        self._edgenum = basic_info.edgenum()
 
-        self._egcl_labels = [None] * self._basic_info.edgenum()
+        self._egcl_labels = [None] * self._basic.edgenum()
 
         self._memberset_from_egcl = None
         self._membernum_from_egcl = None
@@ -567,11 +564,11 @@ class _HierarchicalEdgeStatus(_EdgeStatus):
     def merge_egcls_hierarchically(self):
         self._update_egcl_structure()
 
-    def calculate_egclnum(self):
+    def count_egclnum(self):
         return len(self._egcls_from_egcl_label)
 
     def _update_egcl_structure(self):
-        basic_info = self._basic_info
+        basic = self._basic
         partnum = self._partnum
 
         memberset_from_egcl = {}
@@ -589,12 +586,12 @@ class _HierarchicalEdgeStatus(_EdgeStatus):
             membernum_from_egcl.setdefault(egcl, 0)
             membernum_from_egcl[egcl] += 1
 
-            for adj_eg_ind in basic_info.adj_egset_to_eg(eg_ind):
+            for adj_eg_ind in basic.adj_egset_to_eg(eg_ind):
                 adj_egcl = self._egcl_labels[adj_eg_ind]
                 adj_egclset_from_egcl.setdefault(egcl, set()).add(adj_egcl)
 
-            for part, vrt in enumerate(basic_info.get_edge(eg_ind)):
-                for adj_eg_ind in basic_info.adj_egset_to_vrt(part, vrt):
+            for part, vrt in enumerate(basic.get_edge(eg_ind)):
+                for adj_eg_ind in basic.adj_egset_to_vrt(part, vrt):
                     adj_egcl = self._egcl_labels[adj_eg_ind]
                     adj_egclset_from_vrt[part].setdefault(
                         vrt, set() ).add(adj_egcl)
