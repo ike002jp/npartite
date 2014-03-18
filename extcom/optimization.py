@@ -269,9 +269,7 @@ class FastUnfoldingForEdges(FastUnfoldingForEdgesNaively):
                     if egcl_label == adj_egcl_label:
                         continue
 
-                    #moving_diff_info = updater.diff_of_moving_egcl(
-                    #    egcl, adj_egcl_label)
-                    moving_diff_info = updater.minimal_diff_of_moving_egcl(
+                    moving_diff_info = updater.diff_of_moving_egcl(
                         egcl, adj_egcl_label)
                     diff_modval, modval_diff_info = modularity.calculate_diff(
                         status, moving_diff_info)
