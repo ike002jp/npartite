@@ -193,7 +193,6 @@ class _CommunityStatus(object):
 
     # merge, move
     def merge_coms(self, part, com1, com2):
-        partnum = self._partnum
         partlist = self._partlist
         
         moved_vrtset = self._memberset_in_com[part][com1]
@@ -205,7 +204,6 @@ class _CommunityStatus(object):
         self.update_com_with_diff_info(moving_diff_info)
         
     def merge_coms_tentatively(self, part, com1, com2):
-        partnum = self._partnum
         partlist = self._partlist
         
         moved_vrtset = self._memberset_in_com[part][com1]
@@ -288,26 +286,37 @@ class _CommunityStatus(object):
         self._egnum_from_corres = egnum_from_corres
 
     def update_com_with_diff_info(self, moving_diff_info):
+        partlist = self._partlist
+
         moved_vrts_info = moving_diff_info['moved_vrts_info']
+
         new_egset_from_com = moving_diff_info['new_egset_from_com']
         new_egnum_from_com = moving_diff_info['new_egnum_from_com']
+
         new_egset_from_corres = moving_diff_info['new_egset_from_corres']
         new_egnum_from_corres = moving_diff_info['new_egnum_from_corres']
+
         added_corresset = moving_diff_info['added_corresset']
  
-        # vertex indexes, community member
-        for part, _moved_vrt in enumerate(moved_vrts_info):
+        # community labels, members in community
+        for part, _moved_vrt in izip(partlist, moved_vrts_info):
             for vrt, (prev_com, next_com) in _moved_vrt.iteritems():
+                # labels
                 self._com_labels[part][vrt] = next_com
-                self._memberset_in_com[part][prev_com].discard(vrt)
-                self._memberset_in_com[part].setdefault(next_com, 
-                                                          set()).add(vrt)
+
+                # prev com
+                self._memberset_in_com[part][prev_com].remove(vrt)
                 self._membernum_in_com[part][prev_com] -= 1
-                self._membernum_in_com[part].setdefault(next_com, 0)
+
+                # next com
+                if next_com not in self._memberset_in_com[part]:
+                    self._memberset_in_com[part][next_com] = set()
+                    self._membernum_in_com[part][next_com] = 0
+                self._memberset_in_com[part][next_com].add(vrt)
                 self._membernum_in_com[part][next_com] += 1
 
-        # each community information
-        for part, _new_egnum_from_com in enumerate(new_egnum_from_com):
+        # edges from each community
+        for part, _new_egnum_from_com in izip(partlist, new_egnum_from_com):
             for com, egnum in _new_egnum_from_com.iteritems():
                 if egnum == 0:
                     self._del_com(part, com)
@@ -316,7 +325,7 @@ class _CommunityStatus(object):
                     self._egset_from_com[part][com] = _new_egset
                     self._egnum_from_com[part][com] = egnum
                 
-        # correspondence information
+        # correspondence
         for corres, egnum in new_egnum_from_corres.iteritems():
             if egnum == 0:
                 self._del_corres(corres)
@@ -326,35 +335,30 @@ class _CommunityStatus(object):
                 self._egnum_from_corres[corres] = egnum
                 
                 if corres in added_corresset:
-                    for part, com in enumerate(corres):
-                        self._corresset_from_com[part].setdefault(com, set()).add(corres)
+                    for part, com in izip(partlist, corres):
+                        self._corresset_from_com[part].setdefault(
+                            com, set()).add(corres)
 
-        # adjacent correspondency to community
-        #for corres in added_corresset:
-        #    for part, com in enumerate(corres):
-        #        self._corresset_from_com[part].setdefault(com, set()).add(corres)
-
-    # information for the tentative move
+    # diff for merging and moving
     def diff_of_merging_coms(self, part, com1, com2):
         moved_vrtset = self._memberset_in_com[part][com1]
-        partnum = self._partnum
-        moved_vrts_info = [{} for _ in range(partnum)]
+        moved_vrts_info = [{} for _ in self._partlist]
         for vrt in moved_vrtset:
             moved_vrts_info[part][vrt] = [com1, com2]
 
         return self.diff_of_moving_vrts(moved_vrts_info)
 
     def diff_of_moving_vrts(self, moved_vrts_info):
+        partnum = self._partnum
+        partlist = self._partlist
 
         # communities and edges which are affected by the moves
         # moved_vrts_info, prev_com == next_com is the bad case.
-        partnum = self._partnum
         moved_egset = set()
         affected_corresset = set()
-        new_egset_from_com = [{} for _ in range(partnum)]
-        new_egnum_from_com = [{} for _ in range(partnum)]
-        #checked_coms = [set() for _ in range(partnum)]
-        for part, _moved_vrt in enumerate(moved_vrts_info):
+        new_egset_from_com = [{} for _ in partlist]
+        new_egnum_from_com = [{} for _ in partlist]
+        for part, _moved_vrt in izip(partlist, moved_vrts_info):
             for vrt, (prev_com, next_com) in _moved_vrt.iteritems():
                 if prev_com not in new_egset_from_com[part]:
                     affected_corresset |= self.corresset_from_com(part, prev_com)
