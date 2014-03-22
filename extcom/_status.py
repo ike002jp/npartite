@@ -527,11 +527,12 @@ class _HierarchicalEdgeStatus(_EdgeStatus):
         self._partnum = basic_info.partnum()
         self._edgenum = basic_info.edgenum()
 
-        self._egcl_labels = [None] * self._basic.edgenum()
+        self._egcl_labels = [None] * self._edgenum
 
         self._memberset_from_egcl = None
         self._membernum_from_egcl = None
         self._adj_egclset_from_egcl = None
+
         self._adj_egclset_from_vrt = None
         self._egcl_label_from_egcl = None
 
