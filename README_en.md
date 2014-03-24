@@ -1,6 +1,6 @@
 # npartite
 
-**This package contains some algorithms for community detection from n-partite networks**  
+**This package contains some algorithms for community detection from n-partite networks.**  
 
 ## Abstract
 This contains some algorithms for community detection from n-partite networks, 
@@ -39,13 +39,6 @@ The following image is an example of community detection from a tri-partite netw
         * SIMPLE 3 Case
         * SIMPLE PLUS Case
         * SIMPLE 3 PLUS Case
-
-###References
-* <a name="Ana2003"></a> \[Ana 2003\] Ana, L., Jain, A.: Robust data clustering. In: Proceedings of 2003 IEEE Computer Society Conference on Computer Vision and Pattern Recognition, vol. 2, pp. II–128–II–133 (2003)
-* <a name="Murata2010"></a> \[Murata 2010\] Murata, T.: Modularity for Heterogeneous Networks, in Proceedings of the 21st ACM Conference on Hypertext and Hypermedia, pp. 129-134 (2010)
-* <a name="Neubauer2010"></a> \[Neubauer 2010\] Neubauer, N., Obermayer, K.: Community detection in tagging-induced hypergraphs. In: Workshop on Information in Networks (2010)
-* <a name="Ikematsu2013"></a> \[Ikematsu 2013\] Kyohei Ikematsu, Tsuyoshi Murata. A Fast Method for Detecting Communities from Tripartite Networks.  In Proceedings of the 5th International Conference on Social Informatics (SocInfo2013), pp.192-205, November 2013, Kyoto Japan
-* <a name="Ikematsu2014"></a> \[Ikematsu 2014\] 池松恭平，村田剛志．3部モジュラリティの改善とその最適化手法．人工知能学会論文誌，Vol.29，No.2，2014，245-258
 
 ##Required modules
 [numpy](http://www.numpy.org/) is needed if you want to calculate the value of NMI.
@@ -94,3 +87,12 @@ nmi = calculate_nmi(detected_labels, correct_labels)
 print 'NMI: %f' % (nmi, )
 
 ```
+
+##References
+* <a name="Ana2003"></a> \[Ana 2003\] Ana, L., Jain, A.: Robust data clustering. In: Proceedings of 2003 IEEE Computer Society Conference on Computer Vision and Pattern Recognition, vol. 2, pp. II–128–II–133 (2003)
+* <a name="Murata2010"></a> \[Murata 2010\] Murata, T.: Modularity for Heterogeneous Networks, in Proceedings of the 21st ACM Conference on Hypertext and Hypermedia, pp. 129-134 (2010)
+* <a name="Neubauer2010"></a> \[Neubauer 2010\] Neubauer, N., Obermayer, K.: Community detection in tagging-induced hypergraphs. In: Workshop on Information in Networks (2010)
+* <a name="Ikematsu2013"></a> \[Ikematsu 2013\] Kyohei Ikematsu, Tsuyoshi Murata. A Fast Method for Detecting Communities from Tripartite Networks.  In Proceedings of the 5th International Conference on Social Informatics (SocInfo2013), pp.192-205, November 2013, Kyoto Japan
+* <a name="Ikematsu2014"></a> \[Ikematsu 2014\] 池松恭平，村田剛志．3部モジュラリティの改善とその最適化手法．人工知能学会論文誌，Vol.29，No.2，2014，245-258
+
+
