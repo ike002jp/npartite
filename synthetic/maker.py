@@ -193,7 +193,8 @@ class SyntheticNetworkMaker(object):
         max_vrtnum_with_zerodeg = 0
         candidate_correses = []
         for corres in corres_set:
-            vrtnum_with_zerodeg = self._count_vrt_with_zerodeg_in_corres(corres)
+            vrtnum_with_zerodeg = \
+                self._count_vrt_with_zerodeg_in_corres(corres)
                 
             if vrtnum_with_zerodeg > max_vrtnum_with_zerodeg:
                 max_vrtnum_with_zerodeg = vrtnum_with_zerodeg
@@ -206,7 +207,8 @@ class SyntheticNetworkMaker(object):
     def _count_vrt_with_zerodeg_in_corres(self, corres):
         zero_degree_vrtnum = 0
         for part, com in enumerate(corres):
-            zero_degree_vrtnum += self._count_vrt_with_zerodeg_in_com(part, com)
+            zero_degree_vrtnum += \
+                self._count_vrt_with_zerodeg_in_com(part, com)
         
         return zero_degree_vrtnum
     

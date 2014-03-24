@@ -60,7 +60,8 @@ class ContradictiveCaseMaker(SyntheticNetworkMaker):
         community_index = [ [0] * comsize + [1] * comsize,
                             [0] * comsize + [1] * comsize,
                             [0] * comsize + [1] * comsize ]
-        correct_corres_set = set([ (0, 0, 0), (0, 1, 1), (1, 0, 1), (1, 1, 0) ])
+        correct_corres_set = set([ (0, 0, 0), (0, 1, 1), 
+                                   (1, 0, 1), (1, 1, 0) ])
         egnum = corres_egnum * 4
         SyntheticNetworkMaker.__init__(self, name, 
                                        community_index, correct_corres_set, 
