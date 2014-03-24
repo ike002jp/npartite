@@ -319,7 +319,76 @@ class _CommunityStatus(object):
                 self._egset_from_corres[corres] = _egset
                 self._egnum_from_corres[corres] = egnum
                 
+    def update_com_with_minimal_diff_info(self, moving_diff_info):
+        partlist = self._partlist
 
+        moved_vrts_info = moving_diff_info['moved_vrts_info']
+        new_egnum_from_com = moving_diff_info['new_egnum_from_com']
+        new_egnum_from_corres = moving_diff_info['new_egnum_from_corres']
+        changed_corresset = moving_diff_info['changed_corresset']
+
+        new_egset_from_com = [{} for _ in partlist]
+        new_egset_from_corres = {}
+
+        # community labels, members in community
+        for part, _moved_vrt in izip(partlist, moved_vrts_info):
+            for vrt, (prev_com, next_com) in _moved_vrt.iteritems():
+                # labels
+                self._com_labels[part][vrt] = next_com
+
+                # prev com
+                self._memberset_in_com[part][prev_com].remove(vrt)
+                self._membernum_in_com[part][prev_com] -= 1
+
+                # next com
+                if next_com not in self._memberset_in_com[part]:
+                    self._memberset_in_com[part][next_com] = set()
+                    self._membernum_in_com[part][next_com] = 0
+                self._memberset_in_com[part][next_com].add(vrt)
+                self._membernum_in_com[part][next_com] += 1
+
+
+
+                _adj_egset = self._basic.adj_row_egset_to_vrt(part, vrt)
+                egnum = self._basic.degree(part, vrt)
+
+                new_egset_from_com[part].setdefault(
+                    prev_com, self.egset_from_com(part, prev_com)
+                    ).difference_update(_adj_egset)
+
+                new_egset_from_com[part].setdefault(
+                    next_com, self.egset_from_com(part, next_com)
+                    ).update(_adj_egset)
+
+       # edges from each community
+        for part, _new_egnum_from_com in izip(partlist, new_egnum_from_com):
+            for com, egnum in _new_egnum_from_com.iteritems():
+                if egnum == 0:
+                    self._del_com(part, com)
+                else:
+                    _new_egset = new_egset_from_com[part][com]
+                    self._egset_from_com[part][com] = _new_egset
+                    self._egnum_from_com[part][com] = egnum
+
+
+        for eg, (prev_corres, next_corres) in changed_corresset.iteritems():
+            new_egset_from_corres.setdefault(
+                prev_corres, self.egset_from_corres(prev_corres)
+                ).remove(eg)
+ 
+            new_egset_from_corres.setdefault(\
+                next_corres, self.egset_from_corres(next_corres)
+                ).add(eg)
+
+        # correspondence
+        for corres, egnum in new_egnum_from_corres.iteritems():
+            if egnum == 0:
+                self._del_corres(corres)
+            else:
+                _egset = new_egset_from_corres[corres]
+                self._egset_from_corres[corres] = _egset
+                self._egnum_from_corres[corres] = egnum
+ 
     # diff for merging and moving
     def diff_of_merging_coms(self, part, com1, com2):
         moved_vrtset = self._memberset_in_com[part][com1]
@@ -350,7 +419,8 @@ class _CommunityStatus(object):
                     new_egnum_from_com[part][prev_com] = \
                         self.egnum_from_com(part, prev_com)
 
-                new_egset_from_com[part][prev_com].difference_update(_adj_egset)
+                new_egset_from_com[part][prev_com].difference_update(
+                    _adj_egset)
                 new_egnum_from_com[part][prev_com] -= egnum 
 
                 if next_com not in new_egset_from_com[part]:
@@ -399,6 +469,56 @@ class _CommunityStatus(object):
             'new_egnum_from_com' : new_egnum_from_com,
             'new_egset_from_corres' : new_egset_from_corres,
             'new_egnum_from_corres' : new_egnum_from_corres,
+        }
+        return moving_diff_info
+
+    def minimal_diff_of_moving_vrts(self, moved_vrts_info):
+        partlist = self._partlist
+
+        # edges from communities
+        # BAD CASE : prev_com == next_com in moved_vrts_info
+        affected_egset = set()
+        new_egnum_from_com = [{} for _ in partlist]
+        for part, _moved_vrt in izip(partlist, moved_vrts_info):
+            for vrt, (prev_com, next_com) in _moved_vrt.iteritems():
+
+                _adj_egset = self._basic.adj_row_egset_to_vrt(part, vrt)
+                egnum = self._basic.degree(part, vrt)
+                affected_egset |= _adj_egset
+
+                new_egnum_from_com[part].setdefault(
+                    prev_com, self.egnum_from_com(part, prev_com))
+                new_egnum_from_com[part][prev_com] -= egnum 
+
+                new_egnum_from_com[part].setdefault(
+                    next_com, self.egnum_from_com(part, next_com))
+                new_egnum_from_com[part][next_com] += egnum
+
+        # correspondences which are affected by the move
+        new_egnum_from_corres = {}
+        changed_corresset = {}
+        for eg in affected_egset:
+            prev_corres = self._corres_from_eg(eg)
+            next_corres = [_moved_vrt.get(
+                            vrt, [None, self.com_of_vrt(part, vrt)])[1] for
+                           part, vrt, _moved_vrt in
+                           izip(partlist, eg, moved_vrts_info)]
+            next_corres = tuple(next_corres)
+            changed_corresset[eg] = (prev_corres, next_corres)
+
+            new_egnum_from_corres.setdefault(
+                prev_corres, self.egnum_from_corres(prev_corres))
+            new_egnum_from_corres[prev_corres] -= 1
+
+            new_egnum_from_corres.setdefault(
+                next_corres, self.egnum_from_corres(next_corres))
+            new_egnum_from_corres[next_corres] += 1
+
+        moving_diff_info = {
+            'moved_vrts_info' : moved_vrts_info,
+            'new_egnum_from_com' : new_egnum_from_com,
+            'new_egnum_from_corres' : new_egnum_from_corres,
+            'changed_corresset' : changed_corresset,
         }
         return moving_diff_info
 
@@ -804,12 +924,12 @@ class ComHiegclSynchronalManeger(object):
         status.com.set_com_labels(com_labels)
 
     def _com_based_on_egcl(self, part, vrt):
-        egcl_status = self._status.hiegcl
+        hiegcl = self._status.hiegcl
         max_size = -1
         max_label = None
-        for egcl in egcl_status.adj_egclset_to_vrt(part, vrt):
-            egcl_label = egcl_status.label_of_egcl(egcl)
-            size = egcl_status.egnum_of_label(egcl_label)
+        for egcl in hiegcl.adj_egclset_to_vrt(part, vrt):
+            egcl_label = hiegcl.label_of_egcl(egcl)
+            size = hiegcl.egnum_of_label(egcl_label)
 
             if size > max_size:
                 max_size = size
@@ -858,7 +978,9 @@ class ComHiegclSynchronalManeger(object):
         for egcl in target_egclset:
             target_egset |= status.hiegcl.egset_of_egcl(egcl)
         moved_vrts_info = self._moved_vrts_info_by_assignment(target_egset)
-        moving_diff_info = status.com.diff_of_moving_vrts(moved_vrts_info)
+        #moving_diff_info = status.com.diff_of_moving_vrts(moved_vrts_info)
+        moving_diff_info = \
+            status.com.minimal_diff_of_moving_vrts(moved_vrts_info)
 
         # rollback
         status.hiegcl.rollback_moving_egcl()

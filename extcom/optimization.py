@@ -283,7 +283,9 @@ class FastUnfoldingForEdges(FastUnfoldingForEdgesNaively):
                     modvals.append(modval)
 
                     status.hiegcl.move_egcl(egcl, max_moved_egcl_label)
-                    status.com.update_com_with_diff_info(max_moving_diff_info)
+                    #status.com.update_com_with_diff_info(max_moving_diff_info)
+                    status.com.update_com_with_minimal_diff_info(
+                        max_moving_diff_info)
                     modularity.update_modval_with_diff_info(
                         max_modval_diff_info)
 
