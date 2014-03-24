@@ -108,7 +108,6 @@ class _CommunityStatus(object):
         self._membernum_in_com = None
         self._egset_from_com = None
         self._egnum_from_com = None
-        self._corresset_from_com =None
 
         self._egset_from_corres = None
         self._egnum_from_corres = None
@@ -140,10 +139,6 @@ class _CommunityStatus(object):
     def egnum_from_com(self, part, com):
         return self._egnum_from_com[part].get(com, 0)
         #return self._egnum_from_com[part].setdefault(com, 0)
-
-    def corresset_from_com(self, part, com):
-        return self._corresset_from_com[part].get(com, set())
-        #return self._corresset_from_com[part].setdefault(com, set())
 
     def iter_com_combinations(self, part, combi_num=2):
         coms = self._memberset_in_com[part].keys()
@@ -182,14 +177,10 @@ class _CommunityStatus(object):
         del self._membernum_in_com[part][com]
         del self._egset_from_com[part][com]
         del self._egnum_from_com[part][com]
-        del self._corresset_from_com[part][com]
 
     def _del_corres(self, corres):
         del self._egset_from_corres[corres]
         del self._egnum_from_corres[corres]
-        for part, com in izip(self._partlist, corres):
-            if com in self._corresset_from_com[part]:
-                self._corresset_from_com[part][com].remove(corres)
 
     # merge, move
     def merge_coms(self, part, com1, com2):
@@ -246,7 +237,6 @@ class _CommunityStatus(object):
         membernum_in_com = [{} for _ in partlist]
         egset_from_com = [{} for _ in partlist]
         egnum_from_com = [{} for _ in partlist]
-        corresset_from_com = [{} for _ in partlist]
 
         egset_from_corres = {}
         egnum_from_corres = {}
@@ -267,20 +257,17 @@ class _CommunityStatus(object):
                     membernum_in_com[part][com] = 0
                     egset_from_com[part][com] = set()
                     egnum_from_com[part][com] = 0
-                    corresset_from_com[part][com] = set()
 
                 if vrt not in memberset_in_com[part][com]:
                     memberset_in_com[part][com].add(vrt)
                     membernum_in_com[part][com] += 1
                 egset_from_com[part][com].add(eg)
                 egnum_from_com[part][com] += 1
-                corresset_from_com[part][com].add(corres)
                 
         self._memberset_in_com = tuple(memberset_in_com)
         self._membernum_in_com = tuple(membernum_in_com)
         self._egset_from_com = tuple(egset_from_com)
         self._egnum_from_com = tuple(egnum_from_com)
-        self._corresset_from_com = tuple(corresset_from_com)
 
         self._egset_from_corres = egset_from_corres
         self._egnum_from_corres = egnum_from_corres
@@ -296,8 +283,6 @@ class _CommunityStatus(object):
         new_egset_from_corres = moving_diff_info['new_egset_from_corres']
         new_egnum_from_corres = moving_diff_info['new_egnum_from_corres']
 
-        added_corresset = moving_diff_info['added_corresset']
- 
         # community labels, members in community
         for part, _moved_vrt in izip(partlist, moved_vrts_info):
             for vrt, (prev_com, next_com) in _moved_vrt.iteritems():
@@ -334,10 +319,6 @@ class _CommunityStatus(object):
                 self._egset_from_corres[corres] = _egset
                 self._egnum_from_corres[corres] = egnum
                 
-                if corres in added_corresset:
-                    for part, com in izip(partlist, corres):
-                        self._corresset_from_com[part].setdefault(
-                            com, set()).add(corres)
 
     # diff for merging and moving
     def diff_of_merging_coms(self, part, com1, com2):
@@ -349,7 +330,6 @@ class _CommunityStatus(object):
         return self.diff_of_moving_vrts(moved_vrts_info)
 
     def diff_of_moving_vrts(self, moved_vrts_info):
-        partnum = self._partnum
         partlist = self._partlist
 
         # edges from communities
@@ -385,7 +365,7 @@ class _CommunityStatus(object):
         # correspondences which are affected by the move
         new_egnum_from_corres = {}
         new_egset_from_corres = {}
-        added_corresset = set()
+        #added_corresset = set()
         for eg in affected_egset:
             prev_corres = self._corres_from_eg(eg)
             next_corres = [_moved_vrt.get(
@@ -404,7 +384,7 @@ class _CommunityStatus(object):
             new_egnum_from_corres[prev_corres] -= 1
 
             if next_corres not in new_egset_from_corres:
-                added_corresset.add(next_corres)
+                #added_corresset.add(next_corres)
                 new_egset_from_corres[next_corres] = \
                     self.egset_from_corres(next_corres).copy()
                 new_egnum_from_corres[next_corres] = \
@@ -419,7 +399,6 @@ class _CommunityStatus(object):
             'new_egnum_from_com' : new_egnum_from_com,
             'new_egset_from_corres' : new_egset_from_corres,
             'new_egnum_from_corres' : new_egnum_from_corres,
-            'added_corresset' : added_corresset,
         }
         return moving_diff_info
 
@@ -432,12 +411,7 @@ class _EdgeStatus(object):
 
         self._memberset_from_egcl = None
         self._membernum_from_egcl = None
-
-    #def get_egcl_labels(self):
-    #    return self._egcl_labels
-
-    def egcl_label(self, eg_ind):
-        return self._egcl_labels[eg_ind]
+        self._egcl_labels = None
 
     def egcl_size(self, egcl_label):
         return self._membernum_from_egcl[egcl_label]
@@ -445,20 +419,18 @@ class _EdgeStatus(object):
     def memberset_from_egcl(self, egcl_label):
         return self._memberset_from_egcl[egcl_label]
 
-    def iter_adj_egcl_to_vrt(self, part, vrt):
-        adj_egcls = [self.egcl_label(eg_ind)
+    def adj_egclset_to_vrt(self, part, vrt):
+        adj_egcls = [self._egcl_labels[eg_ind]
                      for eg_ind 
                      in self._basic.adj_egset_to_vrt(part, vrt)]
 
-        for adj_egcl in set(adj_egcls):
-            yield adj_egcl
+        return set(adj_egcls)
 
     def assign_unique_egcl_labels(self):
         egcl_labels = range(self._edgenum)
-        self.set_egcl_labels(egcl_labels)
-        return self._egcl_labels
+        self._set_egcl_labels(egcl_labels)
 
-    def set_egcl_labels(self, egcl_labels):
+    def _set_egcl_labels(self, egcl_labels):
         self._egcl_labels = egcl_labels
         self._update_egcl_structure()
 
@@ -519,167 +491,148 @@ class _EdgeStatus(object):
         for eg_ind in egcl1_members:
             self._egcl_labels[eg_ind] = egcl1
 
-
-class _HierarchicalEdgeStatus(_EdgeStatus):
+class _HierarchicalEdgeStatus(object):
 
     def __init__(self, basic_info):
         self._basic = basic_info
         self._partnum = basic_info.partnum()
+        self._partlist = basic_info.partlist()
         self._edgenum = basic_info.edgenum()
 
-        self._egcl_labels = [None] * self._edgenum
+        self._adj_egclset_to_vrt = None
+        self._egcl_of_edge = [None] * self._edgenum
 
-        self._memberset_from_egcl = None
-        self._membernum_from_egcl = None
-        self._adj_egclset_from_egcl = None
+        self._label_of_egcl = None
+        self._egset_of_egcl = None
+        self._egnum_of_egcl = None
+        self._adj_egclset_to_egcl = None
 
-        self._adj_egclset_from_vrt = None
-        self._egcl_label_from_egcl = None
+        self._egclset_of_label = None
+        self._egnum_of_label = None
 
-        #self._egclset_from_egcl_label = None
-        self._membernum_from_egcl_label = None
-        self._memberset_from_egcl_label = None
-
-    def egcl_label(self, egcl):
-        return self._egcl_label_from_egcl[egcl]
-
-    def egcl_size(self, egcl_label):
-        return self._membernum_from_egcl_label[egcl_label]
-
-    def memberset_from_egcl_label(self, egcl_label):
-        return self._memberset_from_egcl_label[egcl_label]
-
-    def iter_adj_egcl_to_vrt(self, part, vrt):
-        return [self._egcl_label_from_egcl[adj_egcl] 
-                    for adj_egcl
-                    in self._adj_egclset_from_vrt[part][vrt] ]
+    def adj_egclset_to_vrt(self, part, vrt):
+        return self._adj_egclset_to_vrt[part][vrt]
 
     def egcls_randomly(self):
-        egcls = self._membernum_from_egcl.keys()
+        egcls = self._egnum_of_egcl.keys()
         random.shuffle(egcls)
         return egcls
 
-    def adj_egclset(self, egcl):
-        return self._adj_egclset_from_egcl[egcl]
+    def label_of_egcl(self, egcl):
+        return self._label_of_egcl[egcl]
+
+    def egset_of_egcl(self, egcl):
+        return self._egset_of_egcl[egcl]
+
+    def adj_egclset_to_egcl(self, egcl):
+        return self._adj_egclset_to_egcl[egcl]
+
+    def egnum_of_label(self, egcl_label):
+        return self._egnum_of_label[egcl_label]
+
+    def egclset_of_label(self, egcl_label):
+        return self._egclset_of_label[egcl_label]
+
+    def assign_unique_egcl_labels(self):
+        egcls_of_edge = range(self._edgenum)
+        self._set_egcl_labels(egcls_of_edge)
+
+    def _set_egcl_labels(self, egcls_of_edge):
+        self._egcl_of_edge = egcls_of_edge
+        self._update_egcl_structure()
 
     def merge_egcls_hierarchically(self):
         self._update_egcl_structure()
 
-    def count_egclnum(self):
-        return len(self._egcls_from_egcl_label)
-
     def _update_egcl_structure(self):
         basic = self._basic
-        partnum = self._partnum
+        partlist = self._partlist
 
-        memberset_from_egcl = {}
-        membernum_from_egcl = {}
-        adj_egclset_from_egcl = {}
-        adj_egclset_from_vrt = [{} for _ in xrange(partnum)]
-        egcl_label_from_egcl = {}
+        egset_of_egcl = {}
+        egnum_of_egcl = {}
+        label_of_egcl = {}
+        adj_egclset_to_egcl = {}
 
-        #egclset_from_egcl_label = {}
-        memberset_from_egcl_label = {}
-        membernum_from_egcl_label = {}
+        adj_egclset_to_vrt = [{} for _ in partlist]
 
-        for eg_ind, egcl in enumerate(self._egcl_labels):
-            memberset_from_egcl.setdefault(egcl, set()).add(eg_ind)
-            membernum_from_egcl.setdefault(egcl, 0)
-            membernum_from_egcl[egcl] += 1
+        egclset_of_label = {}
+        egnum_of_label = {}
 
+        for eg_ind, egcl in enumerate(self._egcl_of_edge):
+            egset_of_egcl.setdefault(egcl, set()).add(eg_ind)
+            egnum_of_egcl.setdefault(egcl, 0)
+            egnum_of_egcl[egcl] += 1
+
+            # adj_egclset_to_egcl
             for adj_eg_ind in basic.adj_egset_to_eg(eg_ind):
-                adj_egcl = self._egcl_labels[adj_eg_ind]
-                adj_egclset_from_egcl.setdefault(egcl, set()).add(adj_egcl)
+                adj_egcl = self._egcl_of_edge[adj_eg_ind]
+                adj_egclset_to_egcl.setdefault(egcl, set()).add(adj_egcl)
 
-            for part, vrt in enumerate(basic.get_edge(eg_ind)):
-                for adj_eg_ind in basic.adj_egset_to_vrt(part, vrt):
-                    adj_egcl = self._egcl_labels[adj_eg_ind]
-                    adj_egclset_from_vrt[part].setdefault(
-                        vrt, set() ).add(adj_egcl)
+            # adj_egclset_to_vrt
+            for part, vrt in izip(partlist, basic.get_edge(eg_ind)):
+                adj_egclset_to_vrt[part].setdefault(vrt, set()).add(egcl)
 
-            egcl_label_from_egcl.setdefault(egcl, egcl)
+            # next_egcl
+            label_of_egcl[egcl] = egcl
+            egclset_of_label.setdefault(egcl, set()).add(egcl)
+            egnum_of_label.setdefault(egcl, 0)
+            egnum_of_label[egcl] += 1
 
-            #egclset_from_egcl_label.setdefault(egcl, set([egcl]))
-            memberset_from_egcl_label.setdefault(egcl, set()).add(eg_ind)
-            membernum_from_egcl_label.setdefault(egcl, 0)
-            membernum_from_egcl_label[egcl] += 1
+        self._egset_of_egcl = egset_of_egcl
+        self._egnum_of_egcl = egnum_of_egcl
+        self._label_of_egcl = label_of_egcl
+        self._adj_egclset_to_egcl = adj_egclset_to_egcl
 
-        #for egcl_label, egclset in egclset_from_egcl_label.iteritems():
-        #    membernum = 0
-        #    memberset = set()
-        #    for egcl in egclset:
-        #        memberset.update( memberset_from_egcl[egcl] )
-        #        membernum += membernum_from_egcl[egcl]
-        #    membernum_from_egcl_label[egcl_label] = membernum
-        #    memberset_from_egcl_label[egcl_label] = memberset
+        self._adj_egclset_to_vrt = adj_egclset_to_vrt
 
-        self._memberset_from_egcl = memberset_from_egcl
-        self._membernum_from_egcl = membernum_from_egcl
-        self._adj_egclset_from_egcl = adj_egclset_from_egcl
-        self._adj_egclset_from_vrt = adj_egclset_from_vrt
-        self._egcl_label_from_egcl = egcl_label_from_egcl
+        self._egclset_of_label = egclset_of_label
+        self._egnum_of_label = egnum_of_label
 
-        #self._egclset_from_egcl_label = egclset_from_egcl_label
-        self._membernum_from_egcl_label = membernum_from_egcl_label
-        self._memberset_from_egcl_label = memberset_from_egcl_label
+    def move_egcl(self, egcl, next_label):
+        self.move_egcl_tentatively(egcl, next_label)
 
-        #print self._egcl_labels
-        #print self._memberset_from_egcl
-        #print self._membernum_from_egcl
-        #print ''
+        # edges
+        egset = self._egset_of_egcl[egcl]
+        for eg_ind in egset:
+            self._egcl_of_edge[eg_ind] = next_label
 
-    #def move_egcl(self, egcl, next_egcl_label):
-    #    self.move_egcl_tentatively(egcl, next_egcl_label)
+    def move_egcl_tentatively(self, egcl, next_label):
+        egnum = self._egnum_of_egcl[egcl]
 
-    def move_egcl_tentatively(self, egcl, next_egcl_label):
-        memberset = self._memberset_from_egcl[egcl]
-        membernum = self._membernum_from_egcl[egcl]
+        # egcls
+        prev_label = self._label_of_egcl[egcl]
+        self._label_of_egcl[egcl] = next_label
 
-        for eg_ind in memberset:
-            self._egcl_labels[eg_ind] = next_egcl_label
+        self._egclset_of_label[prev_label].remove(egcl)
+        self._egclset_of_label[next_label].add(egcl)
 
-        prev_egcl_label = self._egcl_label_from_egcl[egcl]
-        self._egcl_label_from_egcl[egcl] = next_egcl_label
-
-        # update
-        #self._egclset_from_egcl_label[prev_egcl_label].discard(egcl)
-        #self._egclset_from_egcl_label[next_egcl_label].add(egcl)
-
-        self._membernum_from_egcl_label[prev_egcl_label] -= membernum
-        self._membernum_from_egcl_label[next_egcl_label] += membernum
-
-        self._memberset_from_egcl_label[prev_egcl_label].difference_update(memberset)
-        self._memberset_from_egcl_label[next_egcl_label].update(memberset)
+        # egnum
+        self._egnum_of_label[prev_label] -= egnum
+        self._egnum_of_label[next_label] += egnum
 
         # store the information for rollback
         self._rollback_info_of_moving_egcl = \
-            (egcl, prev_egcl_label, next_egcl_label)
+            (egcl, prev_label, next_label)
 
     def rollback_moving_egcl(self):
-        egcl, prev_egcl_label, next_egcl_label = \
+        egcl, prev_label, next_label = \
             self._rollback_info_of_moving_egcl
 
-        memberset = self._memberset_from_egcl[egcl]
-        membernum = self._membernum_from_egcl[egcl]
-        for eg_ind in memberset:
-            self._egcl_labels[eg_ind] = prev_egcl_label
+        egnum = self._egnum_of_egcl[egcl]
 
-        self._egcl_label_from_egcl[egcl] = prev_egcl_label
+        # egcls
+        self._label_of_egcl[egcl] = prev_label
 
-        # update
-        #self._egclset_from_egcl_label[prev_egcl_label].add(egcl)
-        #self._egclset_from_egcl_label[next_egcl_label].remove(egcl)
+        self._egclset_of_label[prev_label].add(egcl)
+        self._egclset_of_label[next_label].remove(egcl)
 
-        self._membernum_from_egcl_label[prev_egcl_label] += membernum
-        self._membernum_from_egcl_label[next_egcl_label] -= membernum
-
-        self._memberset_from_egcl_label[prev_egcl_label].update(memberset)
-        self._memberset_from_egcl_label[next_egcl_label].difference_update(memberset)
+        # egnum
+        self._egnum_of_label[prev_label] += egnum
+        self._egnum_of_label[next_label] -= egnum
 
         # the information for rollback
         self._rollback_info_of_moving_egcl = None
-        
-        
+ 
 #--------------------------------------------------
 # public classes
 #--------------------------------------------------
@@ -700,18 +653,18 @@ class NetworkStatus(object):
     def add_com(self):
         self.com = _CommunityStatus(self.basic)
 
-    def add_egcl(self, is_hierarchical=False):
-        if is_hierarchical:
-            self.egcl = _HierarchicalEdgeStatus(self.basic)
-        else:
-            self.egcl = _EdgeStatus(self.basic)
+    def add_egcl(self):
+        self.egcl = _EdgeStatus(self.basic)
 
+    def add_hiegcl(self):
+        self.hiegcl = _HierarchicalEdgeStatus(self.basic)
 
 class ComEgclSynchronalManeger(object):
 
     def __init__(self, status):
         self._status = status
         self._partnum = status.basic.partnum()
+        self._partlist = status.basic.partlist()
 
     def assign_unique_egcl_labels(self):
         status = self._status
@@ -721,6 +674,9 @@ class ComEgclSynchronalManeger(object):
         # update communities
         self._assign_coms_based_on_all_egcls()
 
+    def merge_egcls(self, egcl1, egcl2):
+        self.merge_egcls_tentatively(egcl1, egcl2)
+
     def merge_egcls_tentatively(self, egcl1, egcl2):
         status = self._status
         # merge egcls
@@ -728,42 +684,21 @@ class ComEgclSynchronalManeger(object):
 
         # update communities
         target_egset = status.egcl.memberset_from_egcl(egcl2)
-        self._assign_coms_based_on_egcls_tentatively(target_egset)
+        moved_vrts_info = self._moved_vrts_info_by_assignment(target_egset)
+        self._status.com.move_vrts_tentatively(moved_vrts_info)
         
     def rollback_merging_egcls(self):
         self._status.egcl.rollback_merging_egcls()
         self._status.com.rollback_moving_vrts()
 
-    def merge_egcls(self, egcl1, egcl2):
-        self.merge_egcls_tentatively(egcl1, egcl2)
-
-    def move_egcl_tentatively(self, egcl, next_egcl_label):
-        status = self._status
-
-        # move egcl
-        prev_egcl_label = status.egcl.egcl_label(egcl)
-        status.egcl.move_egcl_tentatively(egcl, next_egcl_label)
-
-        # update communities
-        target_egset = ( status.egcl.memberset_from_egcl_label(prev_egcl_label) |
-                         status.egcl.memberset_from_egcl_label(next_egcl_label) )
-        self._assign_coms_based_on_egcls_tentatively(target_egset)
-
-    def rollback_moving_egcl(self):
-        self._status.egcl.rollback_moving_egcl()
-        self._status.com.rollback_moving_vrts()
-
-    def move_egcl(self, egcl, next_egcl_label):
-        self.move_egcl_tentatively(egcl, next_egcl_label)
-
     def _assign_coms_based_on_all_egcls(self):
         status = self._status
+        partlist = self._partlist
         com_labels = status.com.com_labels()
-        partnum = self._partnum
 
-        checked_vrtset = [set() for _ in xrange(partnum)]
+        checked_vrtset = [set() for _ in partlist]
         for eg in status.basic.get_edges_as_tuple():
-            for part, vrt in enumerate(eg):
+            for part, vrt in izip(partlist, eg):
                 if vrt in checked_vrtset[part]:
                     continue
                 checked_vrtset[part].add(vrt)
@@ -777,11 +712,8 @@ class ComEgclSynchronalManeger(object):
         egcl_status = self._status.egcl
         max_size = -1
         max_egcl = None
-        for egcl in egcl_status.iter_adj_egcl_to_vrt(part, vrt):
-        #for adj_egcl in egcl_status._adj_egclset_from_vrt[part][vrt]:
-            #egcl = egcl_status.egcl_label(adj_egcl)
+        for egcl in egcl_status.adj_egclset_to_vrt(part, vrt):
             size = egcl_status.egcl_size(egcl)
-            #size = egcl_status._membernum_from_egcl_label[egcl]
 
             if size > max_size:
                 max_size = size
@@ -791,23 +723,17 @@ class ComEgclSynchronalManeger(object):
 
         return max_egcl
 
-    def _assign_coms_based_on_egcls_tentatively(self, target_egset):
-        moved_vrts_info = self._moved_vrts_info_by_assignment(target_egset)
-
-        # move the vertices tentatively
-        self._status.com.move_vrts_tentatively(moved_vrts_info)
-
     def _moved_vrts_info_by_assignment(self, target_egset):
         status = self._status
         com_labels = status.com.com_labels()
-        partnum = self._partnum
+        partlist = self._partlist
 
         # information of the moves of the vertices
-        moved_vrts_info = [{} for _ in xrange(partnum)]
-        checked_vrtset = [set() for _ in xrange(partnum)]
+        moved_vrts_info = [{} for _ in partlist]
+        checked_vrtset = [set() for _ in partlist]
         for eg_ind in target_egset:
             eg = status.basic.get_edge(eg_ind)
-            for part, vrt in enumerate(eg):
+            for part, vrt in izip(partlist, eg):
                 # the vertex has already checked or not
                 if vrt in checked_vrtset[part]:
                     continue
@@ -820,21 +746,122 @@ class ComEgclSynchronalManeger(object):
 
         return moved_vrts_info
  
-    def diff_of_moving_egcl(self, egcl, next_egcl_label):
+class ComHiegclSynchronalManeger(object):
+
+    def __init__(self, status):
+        self._status = status
+        self._partnum = status.basic.partnum()
+        self._partlist = status.basic.partlist()
+
+    def assign_unique_egcl_labels(self):
+        status = self._status
+
+        # assign labels to edges
+        status.hiegcl.assign_unique_egcl_labels()
+
+        # update communities
+        self._assign_coms_based_on_all_egcls()
+
+    def move_egcl(self, egcl, next_label):
+        self.move_egcl_tentatively(egcl, next_label)
+
+    def move_egcl_tentatively(self, egcl, next_label):
         status = self._status
 
         # move egcl
-        prev_egcl_label = status.egcl.egcl_label(egcl)
-        status.egcl.move_egcl_tentatively(egcl, next_egcl_label)
+        prev_label = status.hiegcl.label_of_egcl(egcl)
+        status.hiegcl.move_egcl_tentatively(egcl, next_label)
+
+        # update communities
+        target_egclset = ( status.hiegcl.egclset_of_label(prev_label) |
+                           status.hiegcl.egclset_of_label(next_label) )
+        target_egset = set()
+        for egcl in target_egclset:
+            target_egset |= status.hiegcl.egset_of_egcl(egcl)
+        moved_vrts_info = self._moved_vrts_info_by_assignment(target_egset)
+        self._status.com.move_vrts_tentatively(moved_vrts_info)
+
+    def rollback_moving_egcl(self):
+        self._status.hiegcl.rollback_moving_egcl()
+        self._status.com.rollback_moving_vrts()
+
+    def _assign_coms_based_on_all_egcls(self):
+        status = self._status
+        com_labels = status.com.com_labels()
+        partnum = self._partnum
+        partlist = self._partlist
+
+        checked_vrtset = [set() for _ in partlist]
+        for eg in status.basic.get_edges_as_tuple():
+            for part, vrt in enumerate(eg):
+                if vrt in checked_vrtset[part]:
+                    continue
+                checked_vrtset[part].add(vrt)
+
+                com = self._com_based_on_egcl(part, vrt)
+                com_labels[part][vrt] = com
+
+        status.com.set_com_labels(com_labels)
+
+    def _com_based_on_egcl(self, part, vrt):
+        egcl_status = self._status.hiegcl
+        max_size = -1
+        max_label = None
+        for egcl in egcl_status.adj_egclset_to_vrt(part, vrt):
+            egcl_label = egcl_status.label_of_egcl(egcl)
+            size = egcl_status.egnum_of_label(egcl_label)
+
+            if size > max_size:
+                max_size = size
+                max_label = egcl_label
+            elif size == max_size and max_label < egcl_label:
+                max_label = egcl_label
+
+        return max_label
+
+    def _moved_vrts_info_by_assignment(self, target_egset):
+        status = self._status
+        com_labels = status.com.com_labels()
+        com_based_on_egcl = self._com_based_on_egcl
+        partnum = self._partnum
+        partlist = self._partlist
+
+        # information of the moves of the vertices
+        moved_vrts_info = [{} for _ in partlist]
+        checked_vrtset = [set() for _ in partlist]
+        for eg_ind in target_egset:
+            eg = status.basic.get_edge(eg_ind)
+            for part, vrt in izip(partlist, eg):
+                # the vertex has already checked or not
+                if vrt in checked_vrtset[part]:
+                    continue
+                checked_vrtset[part].add(vrt)
+
+                next_com = com_based_on_egcl(part, vrt)
+                prev_com = com_labels[part][vrt]
+                if prev_com != next_com:
+                    moved_vrts_info[part][vrt] = [prev_com, next_com]
+
+        return moved_vrts_info
+ 
+    def diff_of_moving_egcl(self, egcl, next_label):
+        status = self._status
+
+        # move egcl
+        prev_label = status.hiegcl.label_of_egcl(egcl)
+        status.hiegcl.move_egcl_tentatively(egcl, next_label)
 
         # moved vrtices information
-        target_egset = ( status.egcl.memberset_from_egcl_label(prev_egcl_label) |
-                         status.egcl.memberset_from_egcl_label(next_egcl_label) )
+        target_egclset = ( status.hiegcl.egclset_of_label(prev_label) |
+                           status.hiegcl.egclset_of_label(next_label) )
+        target_egset = set()
+        for egcl in target_egclset:
+            target_egset |= status.hiegcl.egset_of_egcl(egcl)
         moved_vrts_info = self._moved_vrts_info_by_assignment(target_egset)
         moving_diff_info = status.com.diff_of_moving_vrts(moved_vrts_info)
 
         # rollback
-        status.egcl.rollback_moving_egcl()
+        status.hiegcl.rollback_moving_egcl()
 
         return moving_diff_info
 

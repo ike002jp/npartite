@@ -10,6 +10,7 @@ import copy
 
 from _status import NetworkStatus
 from _status import ComEgclSynchronalManeger
+from _status import ComHiegclSynchronalManeger
 
 #--------------------------------------------------
 # static variables
@@ -102,17 +103,17 @@ class GreedyVertexBottomUpSpeedy(_AbstractOptimization):
 
             # all combinations of communities
             max_merged_diff = -1
-            max_merged_coms = None
             max_moving_diff_info = None
             max_modval_diff_info = None
             for part in xrange(partnum):
                 for com1, com2 in status.com.iter_com_combinations(
                                     part, combi_num=2):
-                    moving_diff_info = status.com.diff_of_merging_coms(part, com1, com2)
-                    diff_modval, modval_diff_info = modularity.calculate_diff(status, moving_diff_info)
+                    moving_diff_info = \
+                        status.com.diff_of_merging_coms(part, com1, com2)
+                    diff_modval, modval_diff_info = \
+                        modularity.calculate_diff(status, moving_diff_info)
                     if diff_modval > max_merged_diff:
                         max_merged_diff = diff_modval
-                        max_merged_coms = (part, com1, com2)
                         max_moving_diff_info = moving_diff_info
                         max_modval_diff_info = modval_diff_info
 
@@ -160,13 +161,11 @@ class GreedyEdgeBottomUp(_AbstractOptimization):
             max_merged_egcls = None
             for egcl1, egcl2 in status.egcl.iter_egcl_combination():
                 status_maneger.merge_egcls_tentatively(egcl1, egcl2)
-                #status.egcl.merge_egcls_tentatively_naively(egcl1, egcl2)
                 merged_modval = modularity.calculate(status)
                 if merged_modval > max_merged_modval:
                     max_merged_modval = merged_modval
                     max_merged_egcls = (egcl1, egcl2)
                 status_maneger.rollback_merging_egcls()
-                #status.egcl.rollback_tentative_egcls_merge_naively()
 
             # maximum increase of modularity
             modval = max_merged_modval
@@ -192,9 +191,9 @@ class FastUnfoldingForEdgesNaively(_AbstractOptimization):
         # initialize
         status = NetworkStatus(edge_list)
         status.add_com()
-        status.add_egcl(is_hierarchical=True)
+        status.add_hiegcl()
 
-        updater = ComEgclSynchronalManeger(status)
+        updater = ComHiegclSynchronalManeger(status)
 
         updater.assign_unique_egcl_labels()
         ans_modval = modularity.calculate(status)
@@ -207,7 +206,7 @@ class FastUnfoldingForEdgesNaively(_AbstractOptimization):
             if _modval <= ans_modval:
                 break
 
-            status.egcl.merge_egcls_hierarchically()
+            status.hiegcl.merge_egcls_hierarchically()
             
             ans_modval = _modval
             modvals.extend(_modvals)
@@ -223,13 +222,13 @@ class FastUnfoldingForEdgesNaively(_AbstractOptimization):
         while modval > prev_modval:
             prev_modval = modval
 
-            for egcl in status.egcl.egcls_randomly():
-                egcl_label = status.egcl.egcl_label(egcl)
+            for egcl in status.hiegcl.egcls_randomly():
+                egcl_label = status.hiegcl.label_of_egcl(egcl)
 
                 max_moved_modval = -1
                 max_moved_egcl_label = None
-                for adj_egcl in status.egcl.adj_egclset(egcl):
-                    adj_egcl_label = status.egcl.egcl_label(adj_egcl)
+                for adj_egcl in status.hiegcl.adj_egclset_to_egcl(egcl):
+                    adj_egcl_label = status.hiegcl.label_of_egcl(adj_egcl)
                     if egcl_label == adj_egcl_label:
                         continue
 
@@ -257,22 +256,22 @@ class FastUnfoldingForEdges(FastUnfoldingForEdgesNaively):
         while modval > prev_modval:
             prev_modval = modval
 
-            for egcl in status.egcl.egcls_randomly():
-                egcl_label = status.egcl.egcl_label(egcl)
+            for egcl in status.hiegcl.egcls_randomly():
+                egcl_label = status.hiegcl.label_of_egcl(egcl)
 
-                max_diff_modval = -1
+                max_diff_modval = 0
                 max_moved_egcl_label = None
                 max_moving_diff_info = None
                 max_modval_diff_info = None
-                for adj_egcl in status.egcl.adj_egclset(egcl):
-                    adj_egcl_label = status.egcl.egcl_label(adj_egcl)
+                for adj_egcl in status.hiegcl.adj_egclset_to_egcl(egcl):
+                    adj_egcl_label = status.hiegcl.label_of_egcl(adj_egcl)
                     if egcl_label == adj_egcl_label:
                         continue
 
-                    moving_diff_info = updater.diff_of_moving_egcl(
-                        egcl, adj_egcl_label)
-                    diff_modval, modval_diff_info = modularity.calculate_diff(
-                        status, moving_diff_info)
+                    moving_diff_info = \
+                        updater.diff_of_moving_egcl(egcl, adj_egcl_label)
+                    diff_modval, modval_diff_info = \
+                        modularity.calculate_diff(status, moving_diff_info)
                     if diff_modval > max_diff_modval:
                         max_diff_modval = diff_modval
                         max_moved_egcl_label = adj_egcl_label
@@ -283,12 +282,10 @@ class FastUnfoldingForEdges(FastUnfoldingForEdgesNaively):
                     modval += max_diff_modval
                     modvals.append(modval)
 
-                    max_moving_diff_info = updater.diff_of_moving_egcl(
-                        egcl, max_moved_egcl_label)
-                     
-                    status.egcl.move_egcl_tentatively(egcl, max_moved_egcl_label)
+                    status.hiegcl.move_egcl(egcl, max_moved_egcl_label)
                     status.com.update_com_with_diff_info(max_moving_diff_info)
-                    modularity.update_modval_with_diff_info(max_modval_diff_info)
+                    modularity.update_modval_with_diff_info(
+                        max_modval_diff_info)
 
         return modval, modvals
 
