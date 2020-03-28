@@ -47,10 +47,10 @@
         * SIMPLE 3 PLUS ケース
     * 2部ネットワークは，3部ネットワークにおけるSIMPLE ケースと同様の構造のみ定義済み
 
-##必要なモジュール
+## 必要なモジュール
 NMI値を計算するためには[numpy](http://www.numpy.org/)が必要です．
 
-##使い方
+## 使い方
 以下の例では，SIMPLE ケースのような正解構造を持つ人工3部ネットワークを作成し，
 それに対してコミュニティ抽出を行っています．
 また得られたコミュニティ抽出結果を，NMIを用いて正解構造と比較しています．
@@ -96,7 +96,7 @@ print 'NMI: %f' % (nmi, )
 
 ```
 
-##参考文献
+## 参考文献
 * <a name="Ana2003"></a> \[Ana 2003\] Ana, L., Jain, A.: Robust data clustering. In: Proceedings of 2003 IEEE Computer Society Conference on Computer Vision and Pattern Recognition, vol. 2, pp. II–128–II–133 (2003)
 * <a name="Murata2010"></a> \[Murata 2010\] Murata, T.: Modularity for Heterogeneous Networks, in Proceedings of the 21st ACM Conference on Hypertext and Hypermedia, pp. 129-134 (2010)
 * <a name="Neubauer2010"></a> \[Neubauer 2010\] Neubauer, N., Obermayer, K.: Community detection in tagging-induced hypergraphs. In: Workshop on Information in Networks (2010)
